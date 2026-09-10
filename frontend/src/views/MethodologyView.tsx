@@ -1,20 +1,15 @@
 import React from 'react';
 import {
   BookOpen,
-  Code2,
-  Database,
-  Cpu,
-  ShieldAlert,
   GitBranch,
   Layers,
-  FileSpreadsheet,
-  CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  ChevronRight
 } from 'lucide-react';
 
 export const MethodologyView: React.FC = () => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       {/* 1. Header */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-lg">
         <div className="flex items-center gap-2 mb-1">
@@ -38,45 +33,67 @@ export const MethodologyView: React.FC = () => {
           End-to-End Scientific Architecture Pipeline
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 text-xs font-mono">
-          <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5">
-            <span className="text-[10px] text-blue-400 uppercase font-bold block">01 External Ingestion</span>
-            <div className="font-bold text-slate-200 font-sans">Meteorology & GIS</div>
-            <p className="text-[11px] text-slate-400 font-sans">
-              ERA5-Land cloud Zarr ARCO (2014-2023, 5 grids), 2025 GCC 200-ward GeoJSON, WorldPop 2020.
-            </p>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 text-xs font-mono relative">
+          <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5 flex flex-col justify-between">
+            <div>
+              <span className="text-[10px] text-blue-400 uppercase font-bold block">01 External Ingestion</span>
+              <div className="font-bold text-slate-200 font-sans mt-1">Meteorology & GIS</div>
+              <p className="text-[11px] text-slate-400 font-sans mt-1">
+                ERA5-Land cloud Zarr ARCO (2014-2023, 5 grids), 2025 GCC 200-ward GeoJSON, WorldPop 2020.
+              </p>
+            </div>
+            <div className="hidden md:flex items-center justify-end text-blue-500/60 pt-2">
+              <ChevronRight className="w-4 h-4" />
+            </div>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5">
-            <span className="text-[10px] text-amber-400 uppercase font-bold block">02 Biophysical Engine</span>
-            <div className="font-bold text-slate-200 font-sans">Thermal Diagnostics</div>
-            <p className="text-[11px] text-slate-400 font-sans">
-              Tmrt (ISO 7726 solar balance), Liljegren outdoor WBGT, and 6th-order polynomial UTCI.
-            </p>
+          <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5 flex flex-col justify-between">
+            <div>
+              <span className="text-[10px] text-amber-400 uppercase font-bold block">02 Biophysical Engine</span>
+              <div className="font-bold text-slate-200 font-sans mt-1">Thermal Diagnostics</div>
+              <p className="text-[11px] text-slate-400 font-sans mt-1">
+                Tmrt (ISO 7726 solar balance), Liljegren outdoor WBGT, and 6th-order polynomial UTCI.
+              </p>
+            </div>
+            <div className="hidden md:flex items-center justify-end text-amber-500/60 pt-2">
+              <ChevronRight className="w-4 h-4" />
+            </div>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5">
-            <span className="text-[10px] text-red-400 uppercase font-bold block">03 HTSI Fusion</span>
-            <div className="font-bold text-slate-200 font-sans">Thermal Stress Index</div>
-            <p className="text-[11px] text-slate-400 font-sans">
-              Continuous weighted composite: 0.64U + 0.16W + 0.10B24 + 0.06B72 + 0.04N (0–100 score).
-            </p>
+          <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5 flex flex-col justify-between">
+            <div>
+              <span className="text-[10px] text-red-400 uppercase font-bold block">03 HTSI Fusion</span>
+              <div className="font-bold text-slate-200 font-sans mt-1">Thermal Stress Index</div>
+              <p className="text-[11px] text-slate-400 font-sans mt-1">
+                Continuous weighted composite: 0.64U + 0.16W + 0.10B24 + 0.06B72 + 0.04N (0–100 score).
+              </p>
+            </div>
+            <div className="hidden md:flex items-center justify-end text-red-500/60 pt-2">
+              <ChevronRight className="w-4 h-4" />
+            </div>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5">
-            <span className="text-[10px] text-purple-400 uppercase font-bold block">04 ML Calibration</span>
-            <div className="font-bold text-slate-200 font-sans">XGBoost + Mean Bias</div>
-            <p className="text-[11px] text-slate-400 font-sans">
-              XGBoost on pointwise weather & thermal states; Mean Bias on cumulative multi-day persistence.
-            </p>
+          <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5 flex flex-col justify-between">
+            <div>
+              <span className="text-[10px] text-purple-400 uppercase font-bold block">04 ML Calibration</span>
+              <div className="font-bold text-slate-200 font-sans mt-1">XGBoost + Mean Bias</div>
+              <p className="text-[11px] text-slate-400 font-sans mt-1">
+                XGBoost on pointwise weather & thermal states; Mean Bias on cumulative multi-day persistence.
+              </p>
+            </div>
+            <div className="hidden md:flex items-center justify-end text-purple-500/60 pt-2">
+              <ChevronRight className="w-4 h-4" />
+            </div>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5">
-            <span className="text-[10px] text-emerald-400 uppercase font-bold block">05 Ward Risk Model</span>
-            <div className="font-bold text-slate-200 font-sans">Formula B Triage</div>
-            <p className="text-[11px] text-slate-400 font-sans">
-              Risk = H × E × (0.5 + 0.5V) applied to exactly 200 GCC wards for operational prioritization.
-            </p>
+          <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5 flex flex-col justify-between">
+            <div>
+              <span className="text-[10px] text-emerald-400 uppercase font-bold block">05 Ward Risk Model</span>
+              <div className="font-bold text-slate-200 font-sans mt-1">Formula B Triage</div>
+              <p className="text-[11px] text-slate-400 font-sans mt-1">
+                Risk = H × E × (0.5 + 0.5V) applied to exactly 200 GCC wards for operational prioritization.
+              </p>
+            </div>
           </div>
         </div>
       </div>

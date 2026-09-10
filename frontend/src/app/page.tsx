@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from '../components/Header';
 import { Sidebar, ScreenId } from '../components/Sidebar';
 import { MobileNavDrawer } from '../components/MobileNavDrawer';
@@ -25,6 +25,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [userRole, setUserRole] = useState<string>('GCC Disaster Authority');
   const [language, setLanguage] = useState<'en' | 'ta'>('en');
+  const [viewKey, setViewKey] = useState<number>(0);
 
   // Application Shell Phase F1 modals and states
   const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false);
@@ -71,11 +72,18 @@ export default function Home() {
     methodology: 'Scientific Methodology & Architecture'
   };
 
-  const handleSelectWard = (wardId: number) => {
+  const handleNavigate = useCallback((screen: ScreenId) => {
+    setCurrentScreen(screen);
+    setViewKey((prev) => prev + 1);
+  }, []);
+
+  const handleSelectWard = useCallback((wardId: number) => {
     setSelectedWardId(wardId);
     setCurrentScreen('ward-details');
+    setViewKey((prev) => prev + 1);
     setIsSearchOpen(false);
-  };
+    setSearchQuery('');
+  }, []);
 
   // Search filter
   const searchResults = searchQuery.trim()
@@ -86,7 +94,7 @@ export default function Home() {
           w.ward_id.toString().includes(q) ||
           w.zone_name.toLowerCase().includes(q)
         );
-      })
+      }).slice(0, 20)
     : [];
 
   const mainAppShell = (
@@ -110,37 +118,39 @@ export default function Home() {
         {/* Navigation Sidebar (Collapsible Desktop) */}
         <Sidebar
           currentScreen={currentScreen}
-          onNavigate={(screen) => setCurrentScreen(screen)}
+          onNavigate={handleNavigate}
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           showHotspots={showHotspots}
         />
 
-        {/* Dynamic View Canvas: Optimized for GIS and high-density dashboard */}
+        {/* Dynamic View Canvas with smooth transition: Optimized for GIS and high-density dashboard */}
         <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-6 bg-[#090D16]/95 pb-24">
-          {currentScreen === 'dashboard' && (
-            <HomeDashboardView
-              onSelectWard={handleSelectWard}
-              onNavigateToMap={() => setCurrentScreen('map')}
-            />
-          )}
+          <div key={viewKey} className="animate-fadeIn">
+            {currentScreen === 'dashboard' && (
+              <HomeDashboardView
+                onSelectWard={handleSelectWard}
+                onNavigateToMap={() => handleNavigate('map')}
+              />
+            )}
 
-          {currentScreen === 'map' && (
-            <HeatMapView onSelectWard={handleSelectWard} />
-          )}
+            {currentScreen === 'map' && (
+              <HeatMapView onSelectWard={handleSelectWard} />
+            )}
 
-          {currentScreen === 'forecast' && <ForecastView />}
+            {currentScreen === 'forecast' && <ForecastView />}
 
-          {currentScreen === 'ward-details' && (
-            <WardDetailsView
-              selectedWardId={selectedWardId}
-              onSelectWard={(id) => setSelectedWardId(id)}
-            />
-          )}
+            {currentScreen === 'ward-details' && (
+              <WardDetailsView
+                selectedWardId={selectedWardId}
+                onSelectWard={(id) => setSelectedWardId(id)}
+              />
+            )}
 
-          {currentScreen === 'alerts' && <AlertsView />}
+            {currentScreen === 'alerts' && <AlertsView />}
 
-          {currentScreen === 'methodology' && <MethodologyView />}
+            {currentScreen === 'methodology' && <MethodologyView />}
+          </div>
         </main>
       </div>
 
@@ -149,7 +159,7 @@ export default function Home() {
         isOpen={isMobileNavOpen}
         onClose={() => setIsMobileNavOpen(false)}
         currentScreen={currentScreen}
-        onNavigate={(screen) => setCurrentScreen(screen)}
+        onNavigate={(screen) => handleNavigate(screen)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
         onOpenSearch={() => setIsSearchOpen(true)}
@@ -191,7 +201,10 @@ export default function Home() {
               />
               <button
                 type="button"
-                onClick={() => setIsSearchOpen(false)}
+                onClick={() => {
+                  setIsSearchOpen(false);
+                  setSearchQuery('');
+                }}
                 className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
@@ -204,14 +217,14 @@ export default function Home() {
                 <div className="p-5 text-center text-xs text-slate-400 space-y-2">
                   <p>Type a ward number (e.g. "114"), area ("Royapuram", "Adyar"), or zone.</p>
                   <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-                    {['Royapuram', 'Anna Nagar', 'Tondiarpet', 'Ward 114', 'Adyar'].map((sample) => (
+                    {['Royapuram', 'Anna Nagar', 'Tondiarpet', '114', 'Adyar'].map((q) => (
                       <button
-                        key={sample}
+                        key={q}
                         type="button"
-                        onClick={() => setSearchQuery(sample.replace('Ward ', ''))}
+                        onClick={() => setSearchQuery(q === '114' ? '114' : q)}
                         className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] border border-slate-700 cursor-pointer"
                       >
-                        {sample}
+                        {q === '114' ? 'Ward 114' : q}
                       </button>
                     ))}
                   </div>
@@ -245,7 +258,7 @@ export default function Home() {
 
                       <div className="flex items-center gap-3">
                         <RiskBadge level={w.risk_level} size="sm" />
-                        <span className="text-slate-500 group-hover:text-white">
+                        <span className="text-slate-500 group-hover:text-white transition-colors">
                           <ArrowRight className="w-3.5 h-3.5" />
                         </span>
                       </div>
@@ -302,7 +315,7 @@ export default function Home() {
       {/* Floating Clickable Prototype Controller & Tour Bar */}
       <PrototypeController
         currentScreen={currentScreen}
-        onNavigate={(screen) => setCurrentScreen(screen)}
+        onNavigate={(screen) => handleNavigate(screen)}
         viewportMode={viewportMode}
         onChangeViewportMode={(mode) => setViewportMode(mode)}
         showHotspots={showHotspots}

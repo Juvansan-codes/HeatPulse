@@ -40,7 +40,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 
   return (
     <div
-      className={`bg-slate-900/80 backdrop-blur border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between transition-all hover:border-slate-700 shadow-md ${accentClass} ${className}`}
+      className={`bg-slate-900/90 backdrop-blur border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between transition-all duration-200 hover:border-slate-700 hover:-translate-y-0.5 hover:shadow-lg shadow-md ${accentClass} ${className}`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">

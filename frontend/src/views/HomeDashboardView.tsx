@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { MetricCard } from '../components/MetricCard';
 import { RiskBadge } from '../components/RiskBadge';
-import { WARDS_DATA, CHENNAI_ZONES } from '../lib/data';
-import { WardRecord, SeverityLevel } from '../lib/types';
+import { WARDS_DATA } from '../lib/data';
+import { WardRecord } from '../lib/types';
 import {
-  AlertTriangle,
   Flame,
   Users,
   Moon,
@@ -28,10 +27,12 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
   const [selectedWardPreview, setSelectedWardPreview] = useState<WardRecord>(WARDS_DATA[0]);
 
   // Sort wards by human_heat_risk descending
-  const topCriticalWards = [...WARDS_DATA].sort((a, b) => b.human_heat_risk - a.human_heat_risk);
+  const sortedWards = [...WARDS_DATA].sort((a, b) => b.human_heat_risk - a.human_heat_risk);
+  const miniMapWards = sortedWards.slice(0, 20); // Top 20 for mini preview
+  const topCriticalWards = sortedWards.slice(0, 10); // Top 10 for triage table
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       {/* 1. Executive Heat Alert Banner */}
       <div className="bg-gradient-to-r from-red-950/60 via-slate-900 to-slate-900 border-l-4 border-l-red-500 border-y border-r border-slate-800 rounded-xl p-5 shadow-xl">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -116,7 +117,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
 
       {/* 3. Main Split View: Mini GIS Choropleth & Selected Ward Preview */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Interactive Mini GIS Map of 200 Wards (7 cols) */}
+        {/* Left: Interactive Mini GIS Map preview (7 cols) */}
         <div className="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-xl p-5 flex flex-col justify-between shadow-lg">
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
@@ -126,7 +127,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
                   Spatial Heat Impact Choropleth
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Select a layer or click a ward polygon to inspect the local thermal decomposition
+                  Top 20 high-risk ward preview • Click to inspect decomposition
                 </p>
               </div>
 
@@ -179,31 +180,34 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
               </div>
             </div>
 
-            {/* SVG Choropleth Canvas */}
-            <div className="relative my-4 bg-slate-950/80 rounded-lg border border-slate-800/80 p-4 h-72 flex items-center justify-center overflow-hidden">
+            {/* Choropleth Mini Grid Canvas */}
+            <div className="relative my-4 bg-slate-950/80 rounded-lg border border-slate-800/80 p-4 min-h-[260px] flex flex-col justify-center items-center overflow-hidden">
               {/* Background Map Grid & Coastline Visual */}
               <div className="absolute inset-0 opacity-15 pointer-events-none bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]" />
               
               {/* Bay of Bengal Label on the East */}
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-mono tracking-widest text-cyan-500/40 uppercase rotate-90 pointer-events-none">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-mono tracking-widest text-cyan-500/40 uppercase rotate-90 pointer-events-none">
                 Bay of Bengal (Coastline)
               </div>
 
               {/* 5 ERA5 Grid boundaries overlay */}
-              <div className="absolute left-4 top-3 text-[10px] font-mono text-slate-500 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded border border-blue-400/60 bg-blue-500/10" />
-                <span>5 ERA5-Land Grids Active (0.1° × 0.1°)</span>
+              <div className="w-full text-[10px] font-mono text-slate-500 flex items-center justify-between mb-2 z-10">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded border border-blue-400/60 bg-blue-500/10" />
+                  ERA5-Land Grid Integration Active (0.1° × 0.1°)
+                </span>
+                <span className="text-slate-400 font-sans">Showing top 20 critical wards</span>
               </div>
 
-              {/* Interactive Ward Grid Visual (Simulating Chennai Coastal Ward Cluster) */}
-              <div className="grid grid-cols-5 gap-2.5 w-full max-w-md p-2 z-10">
-                {WARDS_DATA.map((ward) => {
+              {/* Interactive Ward Grid Visual */}
+              <div className="grid grid-cols-5 gap-2 w-full max-w-lg z-10">
+                {miniMapWards.map((ward) => {
                   const isSelected = selectedWardPreview.ward_id === ward.ward_id;
-                  let colorClass = 'bg-emerald-500/40 border-emerald-400';
-                  if (ward.risk_level === 'Moderate') colorClass = 'bg-amber-500/40 border-amber-400';
-                  if (ward.risk_level === 'High') colorClass = 'bg-orange-500/50 border-orange-400';
-                  if (ward.risk_level === 'Very High') colorClass = 'bg-red-500/60 border-red-400 shadow-sm shadow-red-500/30';
-                  if (ward.risk_level === 'Extreme') colorClass = 'bg-purple-600/70 border-purple-400 shadow-md shadow-purple-500/50';
+                  let colorClass = 'bg-emerald-500/30 border-emerald-500/50 text-emerald-300';
+                  if (ward.risk_level === 'Moderate') colorClass = 'bg-amber-500/30 border-amber-500/50 text-amber-300';
+                  if (ward.risk_level === 'High') colorClass = 'bg-orange-500/40 border-orange-500/60 text-orange-300';
+                  if (ward.risk_level === 'Very High') colorClass = 'bg-red-500/50 border-red-500/70 text-red-200 shadow-sm shadow-red-500/20';
+                  if (ward.risk_level === 'Extreme') colorClass = 'bg-purple-600/60 border-purple-500/80 text-purple-200 shadow-md shadow-purple-500/40';
 
                   let displayVal = ward.human_heat_risk.toFixed(2);
                   if (activeMapLayer === 'htsi') displayVal = ward.htsi.toFixed(0);
@@ -215,7 +219,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
                       key={ward.ward_id}
                       type="button"
                       onClick={() => setSelectedWardPreview(ward)}
-                      className={`p-2 rounded-lg border transition-all text-center flex flex-col items-center justify-between cursor-pointer group ${colorClass} ${
+                      className={`p-2 rounded-lg border transition-all text-center flex flex-col items-center justify-between cursor-pointer ${colorClass} ${
                         isSelected
                           ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-950 scale-105 z-20 font-bold'
                           : 'hover:scale-102 hover:brightness-125'
@@ -226,7 +230,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
                       <span className="text-xs font-mono font-bold text-white tabular-nums my-0.5">
                         {displayVal}
                       </span>
-                      <span className="text-[9px] text-white/75 truncate max-w-[55px]">
+                      <span className="text-[9px] text-slate-300 truncate max-w-[55px]">
                         {ward.zone_name.split(' ')[0]}
                       </span>
                     </button>
@@ -246,7 +250,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
               onClick={onNavigateToMap}
               className="text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1 text-xs cursor-pointer"
             >
-              <span>Open GIS Fullscreen</span>
+              <span>Explore All 200 Wards on Interactive GIS</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
