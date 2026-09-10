@@ -61,3 +61,9 @@
 - **Method:** Nearest-grid assignment from each GCC ward centroid to the closest valid ERA5-Land grid cell using Haversine distance.
 - **Process:** Each of the 200 GCC wards is mapped to its nearest ERA5-Land grid cell, creating a relational lookup (`data/processed/gis/spatial_ward_mapping.csv`).
 - **Limitation:** The Chennai pilot analysis uses five valid ERA5-Land grid cells. Ward-level risk is derived relationally from the nearest assigned grid cell; the underlying meteorology remains grid-level.
+
+## 6. Human Thermal Stress Index (HTSI)
+- **Scope:** A project-specific operational thermal-hazard score derived from UTCI, locally climatologically calibrated WBGT, trailing 24/72-hour UTCI burden, and IST nighttime temperature stress.
+- **Formula:** `HTSI = 0.64U + 0.16W + 0.10B24 + 0.06B72 + 0.04N`, bounded to 0–100. Heat Index is retained for explanatory/public-facing apparent-temperature context but is not a weighted component because it is redundant with the thermal pathway diagnostics.
+- **Temporal convention:** Source storage remains UTC. Nighttime uses 22:00–06:00 IST (UTC+05:30); burden windows contain current and earlier grid observations only.
+- **Boundary:** HTSI is not a medical, mortality, or official-warning index. It remains modeled and grid-level; wards join to their assigned grid relationally. See [Step 6 HTSI methodology](phase2_step6_htsi.md).

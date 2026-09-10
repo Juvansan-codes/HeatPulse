@@ -1,5 +1,26 @@
 # Development Journal
 
+## 2026-09-10 (Phase 3: WorldPop exposure)
+**Status:** IMPLEMENTED AND VALIDATED
+- Generated `data/processed/gis/ward_exposure_200.csv`: 200 derived WorldPop R2025A 2020, 100 m population estimates directly aggregated to the official current GCC 2025 ward polygons.
+- The derived total is 4,356,504.51 people. Every record is marked `population_is_derived=True` with `MEDIUM` confidence; it is not an official Census/2026 population count.
+- Added an API retry, small-concurrency, per-ward persistent-cache/resume implementation after the original all-or-nothing 12-thread request batch failed before writing output.
+- Added the integrity test and method documentation. No Census crosswalk, household/child estimate, vulnerability, or human-risk work was performed.
+
+## 2026-09-10 (Phase 3: ward healthcare, vulnerability, and human heat risk)
+**Status:** IMPLEMENTED WITH LIMITATIONS
+- Added `scripts/phase3_step2_healthcare.py`, which parses the local GCC 140 HWC PDF and verifies all 140 Zone/Division pairs against current GCC 2025 zone/ward identifiers. It produces a 200-ward HWC/UPHC availability proxy and facilities per 10,000 derived WorldPop population.
+- Added `scripts/phase3_step3_green_capacity.py`. Green/cooling was intentionally omitted because the available park PDF is a 2016 historical artifact and no current ward-compatible green geometry or vegetation product was available.
+- Added `scripts/phase3_step4_vulnerability.py`. The reduced model is `V = 0.5*S + 0.5*(1-A)`, using normalized population density for structural sensitivity and normalized HWC/UPHC availability for adaptive capacity.
+- Added `scripts/phase3_step5_human_heat_risk.py`. It creates a 200-ward latest HTSI snapshot without duplicating the full thermal history. Selected formula: `Risk = H x E x (0.5 + 0.5V)` where `H=HTSI/100` and `E` is normalized population density.
+- Intentionally omitted current ward-compatible slum/informal-settlement, elderly, disability, chronic-disease, mortality, hospitalization, and other observed-health variables because authoritative compatible sources were not established. No existing HTSI or thermal output was modified.
+
+## 2026-09-10 (Phase 2 Step 6: HTSI)
+**Status:** IMPLEMENTED
+- Added a separate 2014–2023 grid-level HTSI fact table derived read-only from Step 4; validated Tmrt, WBGT, and UTCI outputs were not changed.
+- HTSI uses finalized operational weights: UTCI score, local WBGT percentile anomaly, trailing 24/72-hour UTCI burden, and IST nighttime local-temperature anomaly. Heat Index is retained only as a supporting output.
+- Added reproducible validation, sensitivity, and descriptive-report generation. The index is explicitly project-specific, modeled, grid-level thermal hazard—not a medical or mortality prediction.
+
 ## 2026-09-10 (ARCO Pipeline Migration)
 **Phase 1D: Full Historical ARCO Acquisition (2014-2023)**
 - **Status:** COMPLETED
@@ -34,3 +55,12 @@
   - FastAPI (backend) virtual environment created, dependencies installed, and `pytest` passed for `/api/v1/health`.
   - No forbidden technologies (LightGBM, PyTorch, SQLAlchemy, etc.) introduced.
   - All scientific/prediction modules are completely empty stubs.
+
+## 2026-09-10 (Phase 4: ML Calibration)
+**Status:** IMPLEMENTED AND VALIDATED
+- **Dataset**: orecast_hindcast_raw_2024_2025.parquet vs ERA5 Truth.
+- **Train/Val/Test Split**: Train (Jan-Sep 2024), Val (Oct-Dec 2024), Test (2025 unseen).
+- **Features**: Raw forecast, lead_day, lead_hours, cyclical temporal vars, spatial vars.
+- **Output generated**: orecast_calibrated_2024_2025.parquet and model artifacts under models/phase4_step3/.
+- **Results**: XGBoost corrected Temp, RH, Wind (34.2% imprv) and downstream pointwise indices (UTCI 24.8% imprv). Mean Bias corrected Radiation and HTSI better due to preservation of temporal persistence behavior.
+- **Limitations**: Retained Mean Bias for HTSI due to smoothing conflicts in cumulative derivation from point predictions.
