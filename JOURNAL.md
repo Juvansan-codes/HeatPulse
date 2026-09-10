@@ -56,6 +56,7 @@
   - No forbidden technologies (LightGBM, PyTorch, SQLAlchemy, etc.) introduced.
   - All scientific/prediction modules are completely empty stubs.
 
+
 ## 2026-09-10 (Phase 4: ML Calibration)
 **Status:** IMPLEMENTED AND VALIDATED
 - **Dataset**: orecast_hindcast_raw_2024_2025.parquet vs ERA5 Truth.
@@ -64,3 +65,9 @@
 - **Output generated**: orecast_calibrated_2024_2025.parquet and model artifacts under models/phase4_step3/.
 - **Results**: XGBoost corrected Temp, RH, Wind (34.2% imprv) and downstream pointwise indices (UTCI 24.8% imprv). Mean Bias corrected Radiation and HTSI better due to preservation of temporal persistence behavior.
 - **Limitations**: Retained Mean Bias for HTSI due to smoothing conflicts in cumulative derivation from point predictions.
+
+## 2026-09-10 (Phase 4 Step 4: Operational Forecast Pipeline)
+**Status**: IMPLEMENTED AND VERIFIED
+- Validated end-to-end HTSI accuracy against Baseline (Raw NWP) and Mean Bias. The Operational configuration significantly out-performed both baselines across the 1–5 day forecast horizon.
+- Validated rigorous historical-forecast timeline construction, eliminating potential truth leakage in rolling parameters (B24, B72).
+- Conducted full row uniqueness, spatial boundary, and temporal clustering integrity tests. Grouped 4.1M continuous sub-alerts into ~662k continuous operational events across 200 wards.
