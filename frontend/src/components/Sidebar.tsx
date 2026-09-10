@@ -8,8 +8,7 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
-  Database,
-  Building2
+  Database
 } from 'lucide-react';
 
 export type ScreenId = 'dashboard' | 'map' | 'forecast' | 'ward-details' | 'alerts' | 'methodology';
@@ -65,15 +64,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`bg-[#0B1120] border-r border-slate-800 flex flex-col justify-between transition-all duration-200 z-20 select-none ${
-        collapsed ? 'w-18' : 'w-64'
+      className={`bg-[#0B1120] border-r border-slate-800 flex flex-col justify-between transition-all duration-300 ease-in-out z-20 select-none ${
+        collapsed ? 'w-[72px]' : 'w-64'
       }`}
     >
       {/* Top navigation links */}
       <div className="p-3 space-y-1">
-        <div className="px-3 py-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-          {!collapsed && <span>Command Modules</span>}
-        </div>
+        {!collapsed && (
+          <div className="px-3 py-2 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
+            Command Modules
+          </div>
+        )}
+        {collapsed && <div className="h-8" />}
 
         {navItems.map((item) => {
           const isActive = currentScreen === item.id;
@@ -82,15 +84,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
               key={item.id}
               type="button"
               onClick={() => onNavigate(item.id)}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all group cursor-pointer ${
+              className={`relative w-full flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-150 group cursor-pointer ${
                 isActive
-                  ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30 shadow-sm font-semibold'
+                  ? 'bg-blue-600/12 text-blue-400 font-semibold sidebar-active-indicator'
                   : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
               }`}
               title={collapsed ? item.label : undefined}
             >
-              <div className="flex items-center gap-3">
-                <span className={isActive ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'}>
+              <div className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
+                <span className={`transition-colors ${isActive ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'}`}>
                   {item.icon}
                 </span>
                 {!collapsed && <span>{item.label}</span>}
@@ -98,10 +100,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               {!collapsed && item.badge && (
                 <span
-                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition-colors ${
                     isActive
                       ? 'bg-blue-500/20 text-blue-300 font-semibold'
-                      : 'bg-slate-800 text-slate-400'
+                      : 'bg-slate-800 text-slate-500'
                   }`}
                 >
                   {item.badge}
@@ -130,13 +132,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
 
+        {/* Version badge */}
+        {!collapsed && (
+          <div className="text-center text-[10px] font-mono text-slate-600">
+            HeatPulse v1.0 • SIH 2024
+          </div>
+        )}
+
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="w-full flex items-center justify-center p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer text-xs"
+          className="w-full flex items-center justify-center p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer text-xs gap-2"
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <div className="flex items-center gap-2"><ChevronLeft className="w-4 h-4" /><span>Collapse Sidebar</span></div>}
+          {collapsed ? (
+            <ChevronRight className="w-4 h-4" />
+          ) : (
+            <>
+              <ChevronLeft className="w-4 h-4" />
+              <span>Collapse</span>
+            </>
+          )}
         </button>
       </div>
     </aside>

@@ -74,7 +74,7 @@ export const RiskBadge: React.FC<RiskBadgeProps> = ({
       {showDot && (
         <span
           className={`rounded-full shrink-0 ${dotSizes} ${current.dot} ${
-            isExtreme ? 'animate-ping' : ''
+            isExtreme ? 'animate-pulse' : ''
           }`}
         />
       )}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from '../components/Header';
 import { Sidebar, ScreenId } from '../components/Sidebar';
 import { HomeDashboardView } from '../views/HomeDashboardView';
@@ -9,8 +9,8 @@ import { ForecastView } from '../views/ForecastView';
 import { WardDetailsView } from '../views/WardDetailsView';
 import { AlertsView } from '../views/AlertsView';
 import { MethodologyView } from '../views/MethodologyView';
-import { WARDS_DATA, CHENNAI_ZONES } from '../lib/data';
-import { Search, X, MapPin, Building, ArrowRight } from 'lucide-react';
+import { WARDS_DATA } from '../lib/data';
+import { Search, X, ArrowRight } from 'lucide-react';
 import { RiskBadge } from '../components/RiskBadge';
 
 export default function Home() {
@@ -21,6 +21,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [userRole, setUserRole] = useState<string>('GCC Disaster Authority');
   const [language, setLanguage] = useState<'en' | 'ta'>('en');
+  const [viewKey, setViewKey] = useState<number>(0);
 
   // Keyboard shortcut for Cmd+K / Ctrl+K search
   useEffect(() => {
@@ -46,11 +47,18 @@ export default function Home() {
     methodology: 'Scientific Methodology & Architecture'
   };
 
-  const handleSelectWard = (wardId: number) => {
+  const handleNavigate = useCallback((screen: ScreenId) => {
+    setCurrentScreen(screen);
+    setViewKey((prev) => prev + 1);
+  }, []);
+
+  const handleSelectWard = useCallback((wardId: number) => {
     setSelectedWardId(wardId);
     setCurrentScreen('ward-details');
+    setViewKey((prev) => prev + 1);
     setIsSearchOpen(false);
-  };
+    setSearchQuery('');
+  }, []);
 
   // Search filter
   const searchResults = searchQuery.trim()
@@ -61,7 +69,7 @@ export default function Home() {
           w.ward_id.toString().includes(q) ||
           w.zone_name.toLowerCase().includes(q)
         );
-      })
+      }).slice(0, 20)
     : [];
 
   return (
@@ -81,43 +89,45 @@ export default function Home() {
         {/* Navigation Sidebar */}
         <Sidebar
           currentScreen={currentScreen}
-          onNavigate={(screen) => setCurrentScreen(screen)}
+          onNavigate={handleNavigate}
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
 
-        {/* Dynamic View Canvas */}
+        {/* Dynamic View Canvas with fade transition */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#090D16]/95">
-          {currentScreen === 'dashboard' && (
-            <HomeDashboardView
-              onSelectWard={handleSelectWard}
-              onNavigateToMap={() => setCurrentScreen('map')}
-            />
-          )}
+          <div key={viewKey} className="animate-fadeIn">
+            {currentScreen === 'dashboard' && (
+              <HomeDashboardView
+                onSelectWard={handleSelectWard}
+                onNavigateToMap={() => handleNavigate('map')}
+              />
+            )}
 
-          {currentScreen === 'map' && (
-            <HeatMapView onSelectWard={handleSelectWard} />
-          )}
+            {currentScreen === 'map' && (
+              <HeatMapView onSelectWard={handleSelectWard} />
+            )}
 
-          {currentScreen === 'forecast' && <ForecastView />}
+            {currentScreen === 'forecast' && <ForecastView />}
 
-          {currentScreen === 'ward-details' && (
-            <WardDetailsView
-              selectedWardId={selectedWardId}
-              onSelectWard={(id) => setSelectedWardId(id)}
-            />
-          )}
+            {currentScreen === 'ward-details' && (
+              <WardDetailsView
+                selectedWardId={selectedWardId}
+                onSelectWard={(id) => setSelectedWardId(id)}
+              />
+            )}
 
-          {currentScreen === 'alerts' && <AlertsView />}
+            {currentScreen === 'alerts' && <AlertsView />}
 
-          {currentScreen === 'methodology' && <MethodologyView />}
+            {currentScreen === 'methodology' && <MethodologyView />}
+          </div>
         </main>
       </div>
 
       {/* Global Cmd+K Search Modal */}
       {isSearchOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center pt-20 p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center pt-20 p-4 animate-backdropIn">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-xl overflow-hidden animate-modalIn">
             {/* Input row */}
             <div className="p-3 border-b border-slate-800 flex items-center gap-3">
               <Search className="w-5 h-5 text-slate-400 shrink-0" />
@@ -131,8 +141,8 @@ export default function Home() {
               />
               <button
                 type="button"
-                onClick={() => setIsSearchOpen(false)}
-                className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white"
+                onClick={() => { setIsSearchOpen(false); setSearchQuery(''); }}
+                className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -144,34 +154,16 @@ export default function Home() {
                 <div className="p-4 text-center text-xs text-slate-400 space-y-2">
                   <p>Type a ward number (e.g. "114"), area ("Royapuram", "Adyar"), or zone.</p>
                   <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery('Royapuram')}
-                      className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px]"
-                    >
-                      Royapuram
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery('Anna Nagar')}
-                      className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px]"
-                    >
-                      Anna Nagar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery('Tondiarpet')}
-                      className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px]"
-                    >
-                      Tondiarpet
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery('114')}
-                      className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px]"
-                    >
-                      Ward 114
-                    </button>
+                    {['Royapuram', 'Anna Nagar', 'Tondiarpet', '114'].map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => setSearchQuery(q)}
+                        className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] transition-colors"
+                      >
+                        {q === '114' ? 'Ward 114' : q}
+                      </button>
+                    ))}
                   </div>
                 </div>
               ) : searchResults.length === 0 ? (
@@ -203,7 +195,7 @@ export default function Home() {
 
                       <div className="flex items-center gap-3">
                         <RiskBadge level={w.risk_level} size="sm" />
-                        <span className="text-slate-500 group-hover:text-white">
+                        <span className="text-slate-500 group-hover:text-white transition-colors">
                           <ArrowRight className="w-3.5 h-3.5" />
                         </span>
                       </div>

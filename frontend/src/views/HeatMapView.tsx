@@ -4,18 +4,8 @@ import { WardRecord, SeverityLevel } from '../lib/types';
 import { RiskBadge } from '../components/RiskBadge';
 import { MapLegend } from '../components/MapLegend';
 import {
-  Layers,
-  Filter,
-  Search,
-  MapPin,
-  Info,
-  Maximize2,
-  ZoomIn,
-  ZoomOut,
   Navigation,
-  ExternalLink,
-  ShieldAlert,
-  Building
+  ExternalLink
 } from 'lucide-react';
 
 interface HeatMapViewProps {
@@ -56,7 +46,7 @@ export const HeatMapView: React.FC<HeatMapViewProps> = ({ onSelectWard }) => {
   };
 
   return (
-    <div className="h-[calc(100vh-6.5rem)] flex flex-col gap-4">
+    <div className="h-[calc(100vh-6.5rem)] flex flex-col gap-4 animate-fadeIn">
       {/* Top Filter Bar */}
       <div className="bg-slate-900/95 border border-slate-800 rounded-xl p-3 shadow-md flex flex-wrap items-center justify-between gap-3 text-xs">
         {/* Layer Select Buttons */}
