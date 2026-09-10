@@ -1,5 +1,23 @@
 # Development Journal
 
+## 2026-09-11 (Phase F1: Application Shell & Responsive Command Workspace)
+**Status:** IMPLEMENTED AND VALIDATED
+- **Application Shell & Navigation Architecture:**
+  - Built the unified application shell for HeatPulse with desktop GIS command center workspace and clean mobile responsive collapse.
+  - Sidebar navigation updated with Phase F1 core modules: **Dashboard**, **Heat Map** (large GIS workspace), **Forecast** (5-Day ML), **Alerts** (SOP matrix), **Ward Analysis** (Formula B dossiers), and **Methodology & Science**.
+  - Desktop sidebar supports clean collapse (`256px` to `72px`) with icon rail tooltips and persistent canonical provenance footer (200 GCC Wards, WorldPop R2025A 4.35M pop, 140 HWC facilities, 5 ERA5 land cells).
+- **Mobile Responsive Drawer:**
+  - Created `components/MobileNavDrawer.tsx` with glassmorphism slide-in drawer, full module navigation, fast search trigger, language switcher, and officer profile access.
+- **Modals & Command Panels:**
+  - Created `components/SettingsModal.tsx` providing display telemetry preferences (Celsius/Fahrenheit, km/h vs m/s), GIS basemap switcher (Obsidian Dark, Night Satellite, Clean Carto), sound alert toggles, data pipeline verification table, and GCC platform credits.
+  - Created `components/UserProfileModal.tsx` providing officer profile dossiers, operational role simulation (GCC Disaster Authority, Public Health Director, Zonal Officer, 108 EMS Coordinator), command jurisdiction, SOP clearance, and Ripon Building hotline details.
+- **Interactive Clickable Prototype Controller:**
+  - Created `components/PrototypeController.tsx` with device viewport switcher (Fluid Responsive, Desktop Large GIS Workspace 1440px, and Mobile iPhone 15 Pro 390px framed simulator), 6-flow interactive stepper, and clickable hotspot highlighting.
+- **Verification:**
+  - Production build (`npm run build`) succeeded with 0 errors.
+  - Dev server verified on `localhost:3000`. Full browser subagent navigation and screenshot verification across all 6 screens, settings modal, and device simulation passed.
+
+
 ## 2026-09-10 (Phase 3: WorldPop exposure)
 **Status:** IMPLEMENTED AND VALIDATED
 - Generated `data/processed/gis/ward_exposure_200.csv`: 200 derived WorldPop R2025A 2020, 100 m population estimates directly aggregated to the official current GCC 2025 ward polygons.

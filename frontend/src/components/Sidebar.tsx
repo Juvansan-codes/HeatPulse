@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import {
   LayoutDashboard,
@@ -9,7 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Database,
-  Building2
+  ShieldAlert,
+  Sparkles
 } from 'lucide-react';
 
 export type ScreenId = 'dashboard' | 'map' | 'forecast' | 'ward-details' | 'alerts' | 'methodology';
@@ -19,53 +22,56 @@ interface SidebarProps {
   onNavigate: (screen: ScreenId) => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  showHotspots?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentScreen,
   onNavigate,
   collapsed,
-  onToggleCollapse
+  onToggleCollapse,
+  showHotspots = false
 }) => {
   const navItems: { id: ScreenId; label: string; icon: React.ReactNode; badge?: string }[] = [
     {
       id: 'dashboard',
-      label: 'Home Dashboard',
+      label: 'Dashboard',
       icon: <LayoutDashboard className="w-4 h-4 shrink-0" />
     },
     {
       id: 'map',
-      label: 'Heat Map (GIS)',
+      label: 'Heat Map',
       icon: <MapPin className="w-4 h-4 shrink-0" />,
       badge: '200 Wards'
     },
     {
       id: 'forecast',
-      label: '5-Day Forecast',
+      label: 'Forecast',
       icon: <CalendarDays className="w-4 h-4 shrink-0" />,
-      badge: 'ML-XGB'
-    },
-    {
-      id: 'ward-details',
-      label: 'Ward Details',
-      icon: <FileText className="w-4 h-4 shrink-0" />
+      badge: '5-Day ML'
     },
     {
       id: 'alerts',
-      label: 'Alerts & Advisories',
+      label: 'Alerts',
       icon: <AlertTriangle className="w-4 h-4 shrink-0" />,
-      badge: 'SOPs'
+      badge: 'Active SOPs'
+    },
+    {
+      id: 'ward-details',
+      label: 'Ward Analysis',
+      icon: <FileText className="w-4 h-4 shrink-0" />,
+      badge: 'Formula B'
     },
     {
       id: 'methodology',
-      label: 'Methodology & Science',
+      label: 'Methodology',
       icon: <BookOpen className="w-4 h-4 shrink-0" />
     }
   ];
 
   return (
     <aside
-      className={`bg-[#0B1120] border-r border-slate-800 flex flex-col justify-between transition-all duration-200 z-20 select-none ${
+      className={`hidden lg:flex flex-col justify-between bg-[#0B1120] border-r border-slate-800 transition-all duration-200 z-20 select-none ${
         collapsed ? 'w-18' : 'w-64'
       }`}
     >
@@ -82,11 +88,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               key={item.id}
               type="button"
               onClick={() => onNavigate(item.id)}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all group cursor-pointer ${
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all group cursor-pointer ${
                 isActive
                   ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30 shadow-sm font-semibold'
                   : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-              }`}
+              } ${showHotspots && !isActive ? 'hover:ring-1 hover:ring-amber-400' : ''}`}
               title={collapsed ? item.label : undefined}
             >
               <div className="flex items-center gap-3">
@@ -115,7 +121,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Bottom system provenance and collapse toggle */}
       <div className="p-3 border-t border-slate-800 space-y-3">
         {!collapsed && (
-          <div className="bg-slate-900/90 rounded-lg p-3 border border-slate-800 text-[11px] text-slate-400 space-y-1.5">
+          <div className="bg-slate-900/90 rounded-xl p-3 border border-slate-800 text-[11px] text-slate-400 space-y-1.5">
             <div className="flex items-center gap-1.5 font-semibold text-slate-300 text-xs">
               <Database className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span>Canonical Foundations</span>
@@ -134,9 +140,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           type="button"
           onClick={onToggleCollapse}
           className="w-full flex items-center justify-center p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer text-xs"
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={collapsed ? 'Expand sidebar (256px)' : 'Collapse sidebar (72px)'}
         >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <div className="flex items-center gap-2"><ChevronLeft className="w-4 h-4" /><span>Collapse Sidebar</span></div>}
+          {collapsed ? (
+            <ChevronRight className="w-4 h-4" />
+          ) : (
+            <div className="flex items-center gap-2">
+              <ChevronLeft className="w-4 h-4" />
+              <span>Collapse Sidebar</span>
+            </div>
+          )}
         </button>
       </div>
     </aside>
