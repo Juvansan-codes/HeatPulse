@@ -64,3 +64,16 @@
 - **Output generated**: orecast_calibrated_2024_2025.parquet and model artifacts under models/phase4_step3/.
 - **Results**: XGBoost corrected Temp, RH, Wind (34.2% imprv) and downstream pointwise indices (UTCI 24.8% imprv). Mean Bias corrected Radiation and HTSI better due to preservation of temporal persistence behavior.
 - **Limitations**: Retained Mean Bias for HTSI due to smoothing conflicts in cumulative derivation from point predictions.
+
+## 2026-09-10 (Phase F0: Frontend UI/UX Design Foundation & Complete Screen Flow)
+**Status:** IMPLEMENTED AND VALIDATED
+- **Visual Identity & Design System**: Established HeatPulse's design system in `docs/ui-ux-design-foundation.md` and `frontend/src/app/globals.css`. Implemented a non-negotiable 5-tier project severity system (Normal, Moderate, High, Very High, Extreme) with strict WCAG AA/AAA compliance. Built dark obsidian GIS intelligence theme (`#090D16`), monospace tabular metrics, and custom component tokens.
+- **Component Primitives**: Built reusable `RiskBadge`, `MetricCard`, `MapLegend`, `Header` (with live IST clock, status ticker, role selector, Cmd+K search), and `Sidebar` (with module navigation and canonical provenance badges).
+- **Complete 6-Screen Architecture**:
+  1. **Home Dashboard**: Executive situational awareness banner, 4 KPI cards, interactive 200-ward choropleth with multi-layer toggle, and top 10 critical triage table ranked by Formula B.
+  2. **Heat Map (GIS)**: Full-screen GIS workspace with 200 GCC wards, 15 Zones, 5 ERA5 grid overlays, layer switcher (`Formula B Risk`, `HTSI Hazard`, `UTCI`, `WBGT`, `Exposure`, `HWC Access`), and slide-over ward inspector.
+  3. **5-Day Forecast**: Lead Day 1 to 5 progression cards, 24-hour diurnal trajectory (00:00–23:00 IST) highlighting nocturnal load (22:00–06:00 IST) and solar noon exertion (12:00–15:00 IST), and Lead-Time MAE verification table.
+  4. **Ward Details**: Deep-dive ward dossier with interactive mathematical Formula B breakdown ($H \times E \times (0.5 + 0.5V)$ vs Formula A), thermal indicators, and healthcare accessibility metrics.
+  5. **Alerts & Advisories**: Role-based SOP matrix (GCC Administration, UPHC Clinics, Outdoor Labor, Vulnerable Public), bilingual press release generator (English/Tamil), and emergency escalation matrix.
+  6. **Methodology & Science**: End-to-end architecture pipeline, HTSI formulation, Liljegren WBGT vs UTCI ISO 7730 comparison, reduced vulnerability model, ML calibration audit table, and limitations register.
+- **Verification**: Production build (`npm run build`) passed with zero errors; complete browser session recording and screenshots verified.

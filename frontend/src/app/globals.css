@@ -1,26 +1,74 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --background: #090d16;
+  --foreground: #f8fafc;
+  --surface: #0f172a;
+  --surface-elevated: #131d31;
+  --border-subtle: #1e293b;
+  --border-prominent: #334155;
+  --muted: #94a3b8;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Strict Project-Wide 5-Tier Severity Colors */
+  --risk-normal: #10b981;
+  --risk-normal-bg: rgba(16, 185, 129, 0.12);
+  --risk-normal-border: #059669;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --risk-moderate: #f59e0b;
+  --risk-moderate-bg: rgba(245, 158, 11, 0.12);
+  --risk-moderate-border: #d97706;
+
+  --risk-high: #f97316;
+  --risk-high-bg: rgba(249, 115, 22, 0.12);
+  --risk-high-border: #ea580c;
+
+  --risk-very-high: #ef4444;
+  --risk-very-high-bg: rgba(239, 68, 68, 0.12);
+  --risk-very-high-border: #dc2626;
+
+  --risk-extreme: #7c3aed;
+  --risk-extreme-bg: rgba(124, 58, 237, 0.15);
+  --risk-extreme-border: #6d28d9;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Tabular figures for scientific data presentation */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Custom subtle scrollbars for dense GIS panels */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Pulsing beacon for Extreme Thermal Event (UTCI >= 46°C) */
+@keyframes extreme-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(124, 58, 237, 0);
+  }
+}
+.pulse-extreme {
+  animation: extreme-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
