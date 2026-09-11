@@ -1,18 +1,28 @@
-import React, { useState } from 'react';
+'use client';
+
+import React, { useState, useEffect, useMemo } from 'react';
 import { MetricCard } from '../components/MetricCard';
 import { RiskBadge } from '../components/RiskBadge';
-import { WARDS_DATA, CHENNAI_ZONES } from '../lib/data';
+import { MapLegend } from '../components/MapLegend';
+import { WARDS_DATA, FORECAST_DAYS, FORECAST_TODAY, CHENNAI_ZONES } from '../lib/data';
 import { WardRecord, SeverityLevel } from '../lib/types';
 import {
   AlertTriangle,
   Flame,
-  Users,
-  Moon,
+  Thermometer,
+  MapPin,
+  TrendingUp,
   ChevronRight,
   ExternalLink,
   Info,
   Layers,
-  ArrowUpRight
+  ArrowUpRight,
+  Calendar,
+  Clock,
+  Activity,
+  ShieldAlert,
+  Zap,
+  Wind
 } from 'lucide-react';
 
 interface HomeDashboardViewProps {
@@ -20,413 +30,584 @@ interface HomeDashboardViewProps {
   onNavigateToMap: () => void;
 }
 
+/* ────────────────────────────────────────────────────────────────────────
+   Severity color helper — maps a SeverityLevel to tailwind-compatible
+   inline and class tokens used across multiple sections.
+   ──────────────────────────────────────────────────────────────────────── */
+const SEVERITY_COLORS: Record<SeverityLevel, { bg: string; text: string; border: string; dot: string; hex: string; glow: string }> = {
+  Normal:    { bg: 'rgba(16,185,129,0.12)', text: '#10b981', border: '#059669', dot: '#10b981', hex: '#10b981', glow: 'rgba(16,185,129,0.25)' },
+  Moderate:  { bg: 'rgba(245,158,11,0.12)', text: '#f59e0b', border: '#d97706', dot: '#f59e0b', hex: '#f59e0b', glow: 'rgba(245,158,11,0.25)' },
+  High:      { bg: 'rgba(249,115,22,0.12)', text: '#f97316', border: '#ea580c', dot: '#f97316', hex: '#f97316', glow: 'rgba(249,115,22,0.3)' },
+  'Very High': { bg: 'rgba(239,68,68,0.12)', text: '#ef4444', border: '#dc2626', dot: '#ef4444', hex: '#ef4444', glow: 'rgba(239,68,68,0.3)' },
+  Extreme:   { bg: 'rgba(124,58,237,0.15)', text: '#a855f7', border: '#7c3aed', dot: '#7c3aed', hex: '#7c3aed', glow: 'rgba(124,58,237,0.4)' },
+};
+
+/* ────────────────────────────────────────────────────────────────────────
+   Main Dashboard Component
+   ──────────────────────────────────────────────────────────────────────── */
 export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
   onSelectWard,
   onNavigateToMap
 }) => {
-  const [activeMapLayer, setActiveMapLayer] = useState<'risk' | 'htsi' | 'utci' | 'wbgt'>('risk');
-  const [selectedWardPreview, setSelectedWardPreview] = useState<WardRecord>(WARDS_DATA[0]);
+  // ─── Map toggle state ──────────────────────────────────────────────
+  const [mapMode, setMapMode] = useState<'htsi' | 'risk'>('risk');
+  const [hoveredWard, setHoveredWard] = useState<WardRecord | null>(null);
 
-  // Sort wards by human_heat_risk descending
-  const topCriticalWards = [...WARDS_DATA].sort((a, b) => b.human_heat_risk - a.human_heat_risk);
+  // ─── Live IST clock ────────────────────────────────────────────────
+  const [istTime, setIstTime] = useState<string>('');
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      const opts: Intl.DateTimeFormatOptions = {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric', month: 'short', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false,
+      };
+      setIstTime(new Intl.DateTimeFormat('en-IN', opts).format(now) + ' IST');
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
 
+  // ─── Derived KPI metrics (computed, never hardcoded) ───────────────
+  const kpis = useMemo(() => {
+    const sorted = [...WARDS_DATA].sort((a, b) => b.human_heat_risk - a.human_heat_risk);
+    const highestRiskWard = sorted[0];
+
+    // City-level risk = the maximum ward risk level
+    const severityRank: Record<SeverityLevel, number> = { Normal: 1, Moderate: 2, High: 3, 'Very High': 4, Extreme: 5 };
+    const cityRiskLevel = WARDS_DATA.reduce<SeverityLevel>((max, w) =>
+      severityRank[w.risk_level] > severityRank[max] ? w.risk_level : max
+    , 'Normal');
+
+    const maxHtsi = Math.max(...WARDS_DATA.map(w => w.htsi));
+    const extremeUtciWards = WARDS_DATA.filter(w => w.utci >= 38).length;
+
+    // Wards in high+ categories
+    const highPlusWards = WARDS_DATA.filter(w =>
+      w.risk_level === 'High' || w.risk_level === 'Very High' || w.risk_level === 'Extreme'
+    );
+
+    return {
+      cityRiskLevel,
+      maxHtsi,
+      highestRiskWard,
+      extremeUtciWards,
+      highPlusCount: highPlusWards.length,
+      sorted,
+    };
+  }, []);
+
+  // ─── Forecast data (today + 5 days) ────────────────────────────────
+  const forecastAll = useMemo(() => [FORECAST_TODAY, ...FORECAST_DAYS], []);
+
+  // ─── Dynamic alert text ────────────────────────────────────────────
+  const alertText = useMemo(() => {
+    const veryHighWards = WARDS_DATA.filter(w => w.risk_level === 'Very High' || w.risk_level === 'Extreme');
+    const affectedZones = [...new Set(veryHighWards.map(w => w.zone_name))];
+    const maxUtci = Math.max(...WARDS_DATA.map(w => w.utci));
+    const zonesStr = affectedZones.length > 0
+      ? affectedZones.slice(0, 3).join(', ')
+      : 'select areas';
+
+    return `High heat risk expected in ${zonesStr} wards during afternoon hours (12:00–15:30 IST). Peak UTCI forecast at ${maxUtci.toFixed(1)}°C. Ensure hydration stations are operational and outdoor labor restrictions are enforced.`;
+  }, []);
+
+
+  /* ═══════════════════════════════════════════════════════════════════
+     R E N D E R
+     ═══════════════════════════════════════════════════════════════════ */
   return (
     <div className="space-y-6">
-      {/* 1. Executive Heat Alert Banner */}
-      <div className="bg-gradient-to-r from-red-950/60 via-slate-900 to-slate-900 border-l-4 border-l-red-500 border-y border-r border-slate-800 rounded-xl p-5 shadow-xl">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-2">
+
+      {/* ═══════════════════════════════════════════════════════════════
+          SECTION 1 — Executive Header Banner
+          ═══════════════════════════════════════════════════════════════ */}
+      <section
+        id="dashboard-header"
+        className="dashboard-header-bg border border-slate-800/80 rounded-2xl p-6 lg:p-8 shadow-2xl relative overflow-hidden"
+      >
+        {/* Subtle radial accent glow */}
+        <div
+          className="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-3xl pointer-events-none opacity-30"
+          style={{ background: `radial-gradient(circle, ${SEVERITY_COLORS[kpis.cityRiskLevel].hex}44, transparent 70%)` }}
+        />
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          {/* Left title area */}
+          <div className="space-y-3">
             <div className="flex items-center gap-2.5">
-              <RiskBadge level="Very High" size="lg" />
-              <span className="text-xs font-mono font-medium text-red-400 uppercase tracking-wider">
-                MUNICIPAL HEAT EMERGENCY ADVISORY ACTIVE
-              </span>
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 via-red-500 to-purple-600 flex items-center justify-center p-1.5 shadow-lg shadow-red-500/20">
+                <svg viewBox="0 0 24 24" fill="none" className="w-full h-full text-white stroke-current stroke-2 stroke-linecap-round stroke-linejoin-round">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-xl lg:text-2xl font-bold tracking-tight text-white">
+                  Heat<span className="text-red-500">Pulse</span>
+                  <span className="text-slate-400 font-normal text-base lg:text-lg ml-2">— Chennai Heat Intelligence</span>
+                </h1>
+              </div>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-              Elevated Thermal Hazard across North & Central Chennai
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
-              Model fusion identifies <strong className="text-white">37 GCC Wards</strong> with high human heat impact. Extreme nocturnal temperature retention (IST 22:00–06:00) prevents physiological cooling in high-density informal dwellings.
+
+            {/* Status line */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div
+                className="status-breathe inline-flex items-center gap-2.5 px-4 py-2 rounded-xl border text-sm font-bold tracking-wide"
+                style={{
+                  backgroundColor: SEVERITY_COLORS[kpis.cityRiskLevel].bg,
+                  borderColor: SEVERITY_COLORS[kpis.cityRiskLevel].border,
+                  color: SEVERITY_COLORS[kpis.cityRiskLevel].text,
+                  boxShadow: `0 0 20px ${SEVERITY_COLORS[kpis.cityRiskLevel].glow}`,
+                }}
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-full animate-pulse"
+                  style={{ backgroundColor: SEVERITY_COLORS[kpis.cityRiskLevel].dot }}
+                />
+                <span>Chennai Heat Status: {kpis.cityRiskLevel.toUpperCase()}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
+                <Clock className="w-3.5 h-3.5 text-blue-400" />
+                <span>{istTime}</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-400 max-w-xl leading-relaxed">
+              Impact-based extreme heat early-warning intelligence across <strong className="text-slate-200">200 GCC wards</strong> · 15 zones · 5 ERA5-Land calibrated grids
             </p>
           </div>
 
-          <div className="flex flex-row lg:flex-col items-end gap-2 shrink-0">
+          {/* Right — quick stats */}
+          <div className="flex flex-col items-end gap-2.5 shrink-0">
             <div className="text-right">
-              <div className="text-[11px] uppercase tracking-wider text-slate-400">Peak Thermal Strain</div>
-              <div className="text-xl font-bold font-mono text-red-400 tabular-nums">UTCI 43.6°C</div>
+              <div className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Peak Thermal Strain</div>
+              <div className="text-2xl font-bold font-mono tabular-nums" style={{ color: SEVERITY_COLORS[kpis.cityRiskLevel].text }}>
+                UTCI {Math.max(...WARDS_DATA.map(w => w.utci)).toFixed(1)}°C
+              </div>
             </div>
             <button
               type="button"
               onClick={onNavigateToMap}
-              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-medium flex items-center gap-2 transition-colors shadow-md shadow-blue-500/20 cursor-pointer"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors shadow-lg shadow-blue-600/25 cursor-pointer"
             >
               <span>Explore 200 Wards on GIS</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* 2. Top-Level KPI Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <MetricCard
-          label="Peak Ward Impact Risk"
-          value="0.678"
-          unit="Formula B"
-          subtitle="Ward 53 • Royapuram Harbour"
-          provenanceTag="DERIVED PROXY"
-          severityAccent="Very High"
-          statusBadge={<RiskBadge level="Very High" size="sm" />}
-          delta={{ value: "+0.042", isIncrease: true, label: "vs 24h avg" }}
-        />
 
-        <MetricCard
-          label="Max Biophysical Strain"
-          value="43.6"
-          unit="°C UTCI"
-          subtitle="Very Strong Heat Stress"
-          provenanceTag="XGB CALIBRATED"
-          severityAccent="Very High"
-          statusBadge={<span className="text-[11px] font-mono text-amber-400 font-semibold">T2m: 38.2°C</span>}
-          delta={{ value: "+1.8°C", isIncrease: true, label: "vs seasonal baseline" }}
-        />
+      {/* ═══════════════════════════════════════════════════════════════
+          SECTION 2 — KPI Metric Cards (dynamically computed)
+          ═══════════════════════════════════════════════════════════════ */}
+      <section id="kpi-cards" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
 
-        <MetricCard
-          label="Population at High+ Risk"
-          value="1,236,000"
-          unit="residents"
-          subtitle="Across 37 Wards in Zones 4, 5, 6 & 8"
-          provenanceTag="WORLDPOP 2020"
-          severityAccent="High"
-          statusBadge={<Users className="w-4 h-4 text-orange-400" />}
-          delta={{ value: "28.4%", isIncrease: true, isNeutral: true, label: "of city population" }}
-        />
-
-        <MetricCard
-          label="Nighttime Retention (N)"
-          value="P86.0"
-          unit="anomaly"
-          subtitle="22:00–06:00 IST Nocturnal Load"
-          provenanceTag="CANONICAL HTSI"
-          severityAccent="Very High"
-          statusBadge={<Moon className="w-4 h-4 text-indigo-400" />}
-          delta={{ value: "High Nocturnal Strain", isIncrease: true, label: "" }}
-        />
-      </div>
-
-      {/* 3. Main Split View: Mini GIS Choropleth & Selected Ward Preview */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Interactive Mini GIS Map of 200 Wards (7 cols) */}
-        <div className="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-xl p-5 flex flex-col justify-between shadow-lg">
-          <div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
-              <div>
-                <h3 className="font-bold text-sm text-slate-100 uppercase tracking-wide flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-blue-400" />
-                  Spatial Heat Impact Choropleth
-                </h3>
-                <p className="text-xs text-slate-400">
-                  Select a layer or click a ward polygon to inspect the local thermal decomposition
-                </p>
-              </div>
-
-              {/* Layer switch buttons */}
-              <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 self-start sm:self-auto">
-                <button
-                  type="button"
-                  onClick={() => setActiveMapLayer('risk')}
-                  className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors ${
-                    activeMapLayer === 'risk'
-                      ? 'bg-blue-600 text-white font-semibold'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Human Risk
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveMapLayer('htsi')}
-                  className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors ${
-                    activeMapLayer === 'htsi'
-                      ? 'bg-blue-600 text-white font-semibold'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  HTSI
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveMapLayer('utci')}
-                  className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors ${
-                    activeMapLayer === 'utci'
-                      ? 'bg-blue-600 text-white font-semibold'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  UTCI
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveMapLayer('wbgt')}
-                  className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors ${
-                    activeMapLayer === 'wbgt'
-                      ? 'bg-blue-600 text-white font-semibold'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  WBGT
-                </button>
-              </div>
-            </div>
-
-            {/* SVG Choropleth Canvas */}
-            <div className="relative my-4 bg-slate-950/80 rounded-lg border border-slate-800/80 p-4 h-72 flex items-center justify-center overflow-hidden">
-              {/* Background Map Grid & Coastline Visual */}
-              <div className="absolute inset-0 opacity-15 pointer-events-none bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]" />
-              
-              {/* Bay of Bengal Label on the East */}
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-mono tracking-widest text-cyan-500/40 uppercase rotate-90 pointer-events-none">
-                Bay of Bengal (Coastline)
-              </div>
-
-              {/* 5 ERA5 Grid boundaries overlay */}
-              <div className="absolute left-4 top-3 text-[10px] font-mono text-slate-500 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded border border-blue-400/60 bg-blue-500/10" />
-                <span>5 ERA5-Land Grids Active (0.1° × 0.1°)</span>
-              </div>
-
-              {/* Interactive Ward Grid Visual (Simulating Chennai Coastal Ward Cluster) */}
-              <div className="grid grid-cols-5 gap-2.5 w-full max-w-md p-2 z-10">
-                {WARDS_DATA.map((ward) => {
-                  const isSelected = selectedWardPreview.ward_id === ward.ward_id;
-                  let colorClass = 'bg-emerald-500/40 border-emerald-400';
-                  if (ward.risk_level === 'Moderate') colorClass = 'bg-amber-500/40 border-amber-400';
-                  if (ward.risk_level === 'High') colorClass = 'bg-orange-500/50 border-orange-400';
-                  if (ward.risk_level === 'Very High') colorClass = 'bg-red-500/60 border-red-400 shadow-sm shadow-red-500/30';
-                  if (ward.risk_level === 'Extreme') colorClass = 'bg-purple-600/70 border-purple-400 shadow-md shadow-purple-500/50';
-
-                  let displayVal = ward.human_heat_risk.toFixed(2);
-                  if (activeMapLayer === 'htsi') displayVal = ward.htsi.toFixed(0);
-                  if (activeMapLayer === 'utci') displayVal = `${ward.utci.toFixed(1)}°`;
-                  if (activeMapLayer === 'wbgt') displayVal = `${ward.wbgt_outdoor.toFixed(1)}°`;
-
-                  return (
-                    <button
-                      key={ward.ward_id}
-                      type="button"
-                      onClick={() => setSelectedWardPreview(ward)}
-                      className={`p-2 rounded-lg border transition-all text-center flex flex-col items-center justify-between cursor-pointer group ${colorClass} ${
-                        isSelected
-                          ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-950 scale-105 z-20 font-bold'
-                          : 'hover:scale-102 hover:brightness-125'
-                      }`}
-                      title={`Ward ${ward.ward_id}: ${ward.ward_name} (${ward.risk_level})`}
-                    >
-                      <span className="text-[10px] font-mono text-white/90">W{ward.ward_id}</span>
-                      <span className="text-xs font-mono font-bold text-white tabular-nums my-0.5">
-                        {displayVal}
-                      </span>
-                      <span className="text-[9px] text-white/75 truncate max-w-[55px]">
-                        {ward.zone_name.split(' ')[0]}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+        {/* Card 1: Current Heat Status */}
+        <div className="kpi-card-enter bg-slate-900/80 backdrop-blur border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between transition-all hover:border-slate-700 shadow-md border-t-2"
+          style={{ borderTopColor: SEVERITY_COLORS[kpis.cityRiskLevel].hex }}
+        >
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              Current Heat Status
+            </span>
+            <RiskBadge level={kpis.cityRiskLevel} size="sm" />
           </div>
+          <div className="my-1">
+            <span
+              className="text-3xl font-extrabold tracking-tight tabular-nums"
+              style={{ color: SEVERITY_COLORS[kpis.cityRiskLevel].text }}
+            >
+              {kpis.cityRiskLevel.toUpperCase()}
+            </span>
+          </div>
+          <div className="mt-2 pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
+            <span>{kpis.highPlusCount} wards at High+ risk</span>
+            <span className="shrink-0 text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-400 border border-slate-700/60">
+              LIVE STATUS
+            </span>
+          </div>
+        </div>
 
-          <div className="flex items-center justify-between pt-2 text-xs text-slate-400 border-t border-slate-800">
-            <span className="flex items-center gap-1.5">
-              <Info className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-              Formula B: <code className="font-mono text-slate-300">Risk = H × E × (0.5 + 0.5V)</code>
+        {/* Card 2: Maximum HTSI */}
+        <div className="kpi-card-enter bg-slate-900/80 backdrop-blur border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between transition-all hover:border-slate-700 shadow-md border-t-2 border-t-red-500">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              Maximum HTSI
+            </span>
+            <Activity className="w-4 h-4 text-red-400" />
+          </div>
+          <div className="my-1 flex items-baseline gap-1.5">
+            <span className="text-3xl font-bold font-mono tracking-tight text-slate-50 tabular-nums">
+              {kpis.maxHtsi.toFixed(1)}
+            </span>
+            <span className="text-sm font-medium text-slate-400">/ 100</span>
+          </div>
+          <div className="mt-2 pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
+            <span>Composite Thermal Stress Index</span>
+            <span className="shrink-0 text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-400 border border-slate-700/60">
+              CANONICAL HTSI
+            </span>
+          </div>
+        </div>
+
+        {/* Card 3: Highest Risk Ward */}
+        <div className="kpi-card-enter bg-slate-900/80 backdrop-blur border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between transition-all hover:border-slate-700 shadow-md border-t-2 border-t-orange-500">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              Highest Risk Ward
+            </span>
+            <MapPin className="w-4 h-4 text-orange-400" />
+          </div>
+          <div className="my-1">
+            <span className="text-2xl font-bold tracking-tight text-white">
+              Ward {kpis.highestRiskWard.ward_id}
+            </span>
+            <div className="text-xs text-slate-400 mt-0.5">{kpis.highestRiskWard.ward_name}</div>
+          </div>
+          <div className="mt-2 pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
+            <span className="font-mono text-red-400 font-semibold tabular-nums">
+              Risk: {kpis.highestRiskWard.human_heat_risk.toFixed(3)}
             </span>
             <button
               type="button"
-              onClick={onNavigateToMap}
-              className="text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1 text-xs cursor-pointer"
+              onClick={() => onSelectWard(kpis.highestRiskWard.ward_id)}
+              className="text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1 text-[11px] cursor-pointer"
             >
-              <span>Open GIS Fullscreen</span>
-              <ChevronRight className="w-3.5 h-3.5" />
+              Inspect <ChevronRight className="w-3 h-3" />
             </button>
           </div>
         </div>
 
-        {/* Right: Selected Ward Inspector Dossier (5 cols) */}
-        <div className="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-xl p-5 flex flex-col justify-between shadow-lg">
-          <div>
-            <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-800">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-mono text-xs font-bold border border-blue-500/20">
-                    WARD {selectedWardPreview.ward_id}
-                  </span>
-                  <span className="text-xs font-medium text-slate-400">
-                    Zone {selectedWardPreview.zone_id} • {selectedWardPreview.zone_name}
-                  </span>
-                </div>
-                <h4 className="text-lg font-bold text-white mt-1">
-                  {selectedWardPreview.ward_name}
-                </h4>
-              </div>
-              <RiskBadge level={selectedWardPreview.risk_level} size="md" />
-            </div>
-
-            {/* Micro Score Decomposition Grid */}
-            <div className="grid grid-cols-3 gap-2.5 my-4">
-              <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-center">
-                <div className="text-[10px] font-semibold text-slate-400 uppercase">Hazard (H)</div>
-                <div className="text-lg font-mono font-bold text-red-400 tabular-nums my-0.5">
-                  {selectedWardPreview.heat_hazard.toFixed(3)}
-                </div>
-                <div className="text-[10px] text-slate-500 font-mono">HTSI {selectedWardPreview.htsi.toFixed(1)}</div>
-              </div>
-
-              <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-center">
-                <div className="text-[10px] font-semibold text-slate-400 uppercase">Exposure (E)</div>
-                <div className="text-lg font-mono font-bold text-amber-400 tabular-nums my-0.5">
-                  {selectedWardPreview.exposure_density_norm.toFixed(3)}
-                </div>
-                <div className="text-[10px] text-slate-500 font-mono">{selectedWardPreview.population_density.toLocaleString()} /km²</div>
-              </div>
-
-              <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-center">
-                <div className="text-[10px] font-semibold text-slate-400 uppercase">Vulnerability (V)</div>
-                <div className="text-lg font-mono font-bold text-orange-400 tabular-nums my-0.5">
-                  {selectedWardPreview.vulnerability.toFixed(3)}
-                </div>
-                <div className="text-[10px] text-slate-500 font-mono">0.5S + 0.5(1-A)</div>
-              </div>
-            </div>
-
-            {/* Thermal & Health Metrics Breakdown List */}
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between p-2 rounded bg-slate-950/60 border border-slate-800/60">
-                <span className="text-slate-400">UTCI Biophysical Strain</span>
-                <span className="font-mono font-semibold text-slate-200 tabular-nums">
-                  {selectedWardPreview.utci}°C (Outdoor)
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-2 rounded bg-slate-950/60 border border-slate-800/60">
-                <span className="text-slate-400">WBGT (Liljegren Shaded/Outdoor)</span>
-                <span className="font-mono font-semibold text-slate-200 tabular-nums">
-                  {selectedWardPreview.wbgt_outdoor}°C
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-2 rounded bg-slate-950/60 border border-slate-800/60">
-                <span className="text-slate-400">Derived Population (WorldPop)</span>
-                <span className="font-mono font-semibold text-slate-200 tabular-nums">
-                  {selectedWardPreview.population.toLocaleString()} residents
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-2 rounded bg-slate-950/60 border border-slate-800/60">
-                <span className="text-slate-400">UPHC / HWC Facilities</span>
-                <span className="font-mono font-semibold text-slate-200 tabular-nums">
-                  {selectedWardPreview.healthcare_facility_count} clinics ({selectedWardPreview.healthcare_facilities_per_10k.toFixed(2)} /10k)
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-2 rounded bg-slate-950/60 border border-slate-800/60">
-                <span className="text-slate-400">Assigned ERA5 Grid</span>
-                <span className="font-mono text-slate-300">
-                  {selectedWardPreview.assigned_grid_id} ({selectedWardPreview.grid_lat}°N, {selectedWardPreview.grid_lon}°E)
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-            <span className="text-[11px] text-slate-500 font-mono">
-              Formula B Score: <strong className="text-white">{selectedWardPreview.human_heat_risk.toFixed(3)}</strong>
+        {/* Card 4: Extreme UTCI Wards */}
+        <div className="kpi-card-enter bg-slate-900/80 backdrop-blur border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between transition-all hover:border-slate-700 shadow-md border-t-2 border-t-amber-500">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              Extreme UTCI Wards
             </span>
-            <button
-              type="button"
-              onClick={() => onSelectWard(selectedWardPreview.ward_id)}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-md border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <span>Full Ward Dossier</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </button>
+            <Thermometer className="w-4 h-4 text-amber-400" />
+          </div>
+          <div className="my-1 flex items-baseline gap-1.5">
+            <span className="text-3xl font-bold font-mono tracking-tight text-slate-50 tabular-nums">
+              {kpis.extremeUtciWards}
+            </span>
+            <span className="text-sm font-medium text-slate-400">wards ≥ 38°C</span>
+          </div>
+          <div className="mt-2 pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
+            <span>Strong Heat Stress threshold</span>
+            <span className="shrink-0 text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-400 border border-slate-700/60">
+              UTCI ≥ 38°C
+            </span>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* 4. Top Critical Wards Triage Table */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+
+      {/* ═══════════════════════════════════════════════════════════════
+          SECTION 3 — Large Chennai Ward Heat Map (200 GCC Wards)
+          ═══════════════════════════════════════════════════════════════ */}
+      <section id="ward-heat-map" className="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+        {/* Map Header with toggle */}
+        <div className="px-5 py-4 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h3 className="font-bold text-sm text-slate-100 uppercase tracking-wide flex items-center gap-2">
-              <Flame className="w-4 h-4 text-red-400" />
-              Top Priority High-Impact Wards (Operational Triage)
-            </h3>
-            <p className="text-xs text-slate-400">
-              Ranked strictly by formula B: Risk = H × E × (0.5 + 0.5V). Direct municipal intervention required.
+            <h2 className="font-bold text-sm text-slate-100 uppercase tracking-wide flex items-center gap-2">
+              <Layers className="w-4 h-4 text-blue-400" />
+              Chennai 200-Ward Heat Map
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Click any ward to inspect thermal decomposition. Colors mapped to 5-tier severity scale.
             </p>
           </div>
 
-          <span className="text-xs font-mono px-2.5 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700 self-start sm:self-auto">
-            10 of 200 Wards Shown
+          {/* THERMAL STRESS | HUMAN HEAT RISK toggle */}
+          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setMapMode('htsi')}
+              className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                mapMode === 'htsi'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+              }`}
+            >
+              THERMAL STRESS
+            </button>
+            <button
+              type="button"
+              onClick={() => setMapMode('risk')}
+              className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                mapMode === 'risk'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+              }`}
+            >
+              HUMAN HEAT RISK
+            </button>
+          </div>
+        </div>
+
+        {/* Map Canvas */}
+        <div className="relative p-5 min-h-[420px] lg:min-h-[480px] bg-slate-950/60">
+          {/* Grid dot pattern background */}
+          <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:20px_20px]" />
+
+          {/* Bay of Bengal label */}
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono tracking-[0.2em] text-cyan-500/30 uppercase rotate-90 pointer-events-none select-none whitespace-nowrap">
+            Bay of Bengal · Coastline →
+          </div>
+
+          {/* ERA5 Grid indicator */}
+          <div className="absolute left-4 top-3 text-[10px] font-mono text-slate-500 flex items-center gap-1.5 z-20">
+            <span className="w-2 h-2 rounded border border-blue-400/60 bg-blue-500/10" />
+            <span>5 ERA5-Land Grids (0.1° × 0.1°)</span>
+          </div>
+
+          {/* Ward Grid — responsive 5-column layout */}
+          <div className="grid grid-cols-5 gap-2 w-full max-w-3xl mx-auto pt-6 pb-4 relative z-10">
+            {WARDS_DATA.map((ward) => {
+              // Determine color based on map mode
+              const metric = mapMode === 'htsi' ? ward.htsi : ward.human_heat_risk;
+              const level = ward.risk_level;
+              const colors = SEVERITY_COLORS[level];
+
+              // Display value
+              const displayVal = mapMode === 'htsi'
+                ? ward.htsi.toFixed(1)
+                : ward.human_heat_risk.toFixed(2);
+
+              return (
+                <button
+                  key={ward.ward_id}
+                  type="button"
+                  onClick={() => onSelectWard(ward.ward_id)}
+                  onMouseEnter={() => setHoveredWard(ward)}
+                  onMouseLeave={() => setHoveredWard(null)}
+                  className="ward-cell relative p-2.5 rounded-lg border transition-all text-center flex flex-col items-center justify-center cursor-pointer group"
+                  style={{
+                    backgroundColor: colors.bg,
+                    borderColor: `${colors.hex}44`,
+                    boxShadow: level === 'Very High' || level === 'Extreme'
+                      ? `0 0 12px ${colors.glow}`
+                      : 'none',
+                  }}
+                  title={`Ward ${ward.ward_id}: ${ward.ward_name} (${ward.risk_level})`}
+                >
+                  <span className="text-[10px] font-mono font-bold text-white/80">
+                    W{ward.ward_id}
+                  </span>
+                  <span
+                    className="text-sm font-mono font-extrabold tabular-nums my-0.5"
+                    style={{ color: colors.text }}
+                  >
+                    {displayVal}
+                  </span>
+                  <span className="text-[9px] text-white/60 truncate max-w-[65px]">
+                    {ward.zone_name.split(' ')[0]}
+                  </span>
+
+                  {/* Hover accent ring */}
+                  <div
+                    className="absolute inset-0 rounded-lg border-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                    style={{ borderColor: colors.hex }}
+                  />
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Hovered Ward Tooltip */}
+          {hoveredWard && (
+            <div className="tooltip-enter absolute bottom-4 left-4 z-30 bg-slate-900/95 backdrop-blur-md border border-slate-700 shadow-2xl rounded-xl p-3.5 text-xs max-w-xs">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-mono text-xs font-bold border border-blue-500/20">
+                    W{hoveredWard.ward_id}
+                  </span>
+                  <span className="font-semibold text-white text-sm">{hoveredWard.ward_name}</span>
+                </div>
+                <RiskBadge level={hoveredWard.risk_level} size="sm" />
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-[11px]">
+                <div className="bg-slate-950 rounded p-1.5 text-center">
+                  <div className="text-slate-500 font-semibold">HTSI</div>
+                  <div className="font-mono font-bold text-white tabular-nums">{hoveredWard.htsi.toFixed(1)}</div>
+                </div>
+                <div className="bg-slate-950 rounded p-1.5 text-center">
+                  <div className="text-slate-500 font-semibold">UTCI</div>
+                  <div className="font-mono font-bold text-amber-300 tabular-nums">{hoveredWard.utci.toFixed(1)}°C</div>
+                </div>
+                <div className="bg-slate-950 rounded p-1.5 text-center">
+                  <div className="text-slate-500 font-semibold">Risk</div>
+                  <div className="font-mono font-bold text-red-400 tabular-nums">{hoveredWard.human_heat_risk.toFixed(3)}</div>
+                </div>
+              </div>
+              <div className="mt-2 text-slate-400 text-[10px]">
+                Zone {hoveredWard.zone_id} · {hoveredWard.zone_name} · {hoveredWard.region} Chennai · Pop: {hoveredWard.population.toLocaleString()}
+              </div>
+            </div>
+          )}
+
+          {/* Inline Map Legend */}
+          <div className="absolute bottom-4 right-4 z-20">
+            <div className="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl p-3 shadow-xl text-xs text-slate-300 w-48">
+              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                {mapMode === 'htsi' ? 'HTSI Score' : 'Human Heat Risk'}
+              </div>
+              <div className="space-y-1">
+                {([
+                  { level: 'Normal', range: mapMode === 'htsi' ? '< 50' : '< 0.20' },
+                  { level: 'Moderate', range: mapMode === 'htsi' ? '50–65' : '0.20–0.35' },
+                  { level: 'High', range: mapMode === 'htsi' ? '65–72' : '0.35–0.50' },
+                  { level: 'Very High', range: mapMode === 'htsi' ? '72–80' : '0.50–0.70' },
+                  { level: 'Extreme', range: mapMode === 'htsi' ? '> 80' : '≥ 0.70' },
+                ] as { level: SeverityLevel; range: string }[]).map(b => (
+                  <div key={b.level} className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="w-3 h-3 rounded-sm border border-black/20"
+                        style={{ backgroundColor: SEVERITY_COLORS[b.level].hex }}
+                      />
+                      <span className="text-slate-300">{b.level}</span>
+                    </div>
+                    <span className="font-mono text-slate-500 tabular-nums">{b.range}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-2 pt-1.5 border-t border-slate-800/60 text-[10px] text-slate-500 font-mono">
+                200 GCC Wards · {WARDS_DATA.length} shown
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Map Footer */}
+        <div className="px-5 py-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+          <span className="flex items-center gap-1.5">
+            <Info className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+            {mapMode === 'htsi'
+              ? <>HTSI: <code className="font-mono text-slate-300">0.64U + 0.16W + 0.10B₂₄ + 0.06B₇₂ + 0.04N</code></>
+              : <>Formula B: <code className="font-mono text-slate-300">Risk = H × E × (0.5 + 0.5V)</code></>
+            }
+          </span>
+          <button
+            type="button"
+            onClick={onNavigateToMap}
+            className="text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1 text-xs cursor-pointer"
+          >
+            <span>Open GIS Fullscreen</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </section>
+
+
+      {/* ═══════════════════════════════════════════════════════════════
+          SECTION 4 — 5-Day Forecast Strip
+          ═══════════════════════════════════════════════════════════════ */}
+      <section id="forecast-strip" className="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+          <h2 className="font-bold text-sm text-slate-100 uppercase tracking-wide flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-blue-400" />
+            5-Day Heat Forecast
+          </h2>
+          <span className="text-[10px] font-mono text-slate-500 px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
+            XGBoost + Mean Bias Calibrated
           </span>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-slate-800 text-slate-400 text-[11px] uppercase tracking-wider font-semibold">
-                <th className="py-2.5 px-3">Ward ID</th>
-                <th className="py-2.5 px-3">Ward Name</th>
-                <th className="py-2.5 px-3">Zone</th>
-                <th className="py-2.5 px-3 text-right">Human Risk</th>
-                <th className="py-2.5 px-3 text-right">HTSI Hazard</th>
-                <th className="py-2.5 px-3 text-right">UTCI (°C)</th>
-                <th className="py-2.5 px-3 text-right">Pop. Density</th>
-                <th className="py-2.5 px-3 text-right">HWC Clinics</th>
-                <th className="py-2.5 px-3 text-center">Severity</th>
-                <th className="py-2.5 px-3 text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 font-sans">
-              {topCriticalWards.map((w, idx) => (
-                <tr
-                  key={w.ward_id}
-                  className="hover:bg-slate-800/50 transition-colors group cursor-pointer"
-                  onClick={() => onSelectWard(w.ward_id)}
+        <div className="p-4 overflow-x-auto forecast-strip">
+          <div className="grid grid-cols-6 gap-3 min-w-[700px]">
+            {forecastAll.map((day, idx) => {
+              const colors = SEVERITY_COLORS[day.risk_level];
+              const isToday = idx === 0;
+              const dayLabels = ['TODAY', 'TOMORROW', 'DAY 3', 'DAY 4', 'DAY 5', 'DAY 6'];
+
+              return (
+                <div
+                  key={day.day_offset}
+                  className={`relative rounded-xl border p-4 flex flex-col items-center text-center transition-all hover:scale-[1.02] ${
+                    isToday ? 'ring-2 ring-blue-500/40 ring-offset-1 ring-offset-slate-950' : ''
+                  }`}
+                  style={{
+                    backgroundColor: colors.bg,
+                    borderColor: `${colors.hex}33`,
+                  }}
                 >
-                  <td className="py-2.5 px-3 font-mono font-semibold text-slate-300">
-                    #{idx + 1} <span className="text-slate-400 ml-1">W{w.ward_id}</span>
-                  </td>
-                  <td className="py-2.5 px-3 font-medium text-white group-hover:text-blue-400 transition-colors">
-                    {w.ward_name}
-                  </td>
-                  <td className="py-2.5 px-3 text-slate-400">{w.zone_name}</td>
-                  <td className="py-2.5 px-3 text-right font-mono font-bold text-red-400 tabular-nums">
-                    {w.human_heat_risk.toFixed(3)}
-                  </td>
-                  <td className="py-2.5 px-3 text-right font-mono text-slate-300 tabular-nums">
-                    {w.htsi.toFixed(1)}
-                  </td>
-                  <td className="py-2.5 px-3 text-right font-mono font-semibold text-amber-300 tabular-nums">
-                    {w.utci.toFixed(1)}°C
-                  </td>
-                  <td className="py-2.5 px-3 text-right font-mono text-slate-400 tabular-nums">
-                    {w.population_density.toLocaleString()} /km²
-                  </td>
-                  <td className="py-2.5 px-3 text-right font-mono text-slate-400 tabular-nums">
-                    {w.healthcare_facility_count}
-                  </td>
-                  <td className="py-2.5 px-3 text-center">
-                    <RiskBadge level={w.risk_level} size="sm" />
-                  </td>
-                  <td className="py-2.5 px-3 text-center">
-                    <span className="text-blue-400 hover:text-blue-300 font-medium inline-flex items-center gap-1 text-[11px]">
-                      Inspect <ChevronRight className="w-3 h-3" />
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  {/* Day label */}
+                  <span className={`text-[11px] font-bold uppercase tracking-wider mb-1 ${
+                    isToday ? 'text-blue-400' : 'text-slate-400'
+                  }`}>
+                    {dayLabels[idx]}
+                  </span>
+
+                  {/* Date */}
+                  <span className="text-[10px] text-slate-500 font-mono mb-3">{day.date}</span>
+
+                  {/* Severity badge */}
+                  <RiskBadge level={day.risk_level} size="md" />
+
+                  {/* Key metrics */}
+                  <div className="mt-3 space-y-1 w-full">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-slate-500">HTSI</span>
+                      <span className="font-mono font-bold text-slate-200 tabular-nums">{day.max_htsi.toFixed(1)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-slate-500">UTCI</span>
+                      <span className="font-mono font-semibold text-amber-300 tabular-nums">{day.max_utci.toFixed(1)}°C</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-slate-500">T₂ₘ</span>
+                      <span className="font-mono text-slate-300 tabular-nums">{day.max_temperature.toFixed(1)}°C</span>
+                    </div>
+                  </div>
+
+                  {/* Nighttime stress flag */}
+                  {day.nighttime_stress_flag && (
+                    <div className="mt-2 text-[9px] text-purple-400/80 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-400/60" />
+                      Night stress
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      </section>
+
+
+      {/* ═══════════════════════════════════════════════════════════════
+          SECTION 5 — Alert Banner
+          ═══════════════════════════════════════════════════════════════ */}
+      <section
+        id="dashboard-alert"
+        className="bg-gradient-to-r from-amber-950/40 via-orange-950/30 to-slate-900 border border-amber-800/30 rounded-2xl p-5 shadow-xl flex items-start gap-4"
+      >
+        <div className="shrink-0 w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+          <AlertTriangle className="w-5 h-5 text-amber-400" />
+        </div>
+        <div className="space-y-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+              Heat Advisory Active
+            </span>
+            <span className="text-[10px] font-mono text-slate-500 px-1.5 py-0.5 rounded bg-slate-800/60 border border-slate-700/50">
+              AUTO-GENERATED
+            </span>
+          </div>
+          <p className="text-sm text-slate-200 leading-relaxed">
+            ⚠ {alertText}
+          </p>
+          <p className="text-[10px] text-slate-500 font-mono">
+            Generated from current ward data and forecast model outputs. Final advisory wording subject to GCC Emergency Control Room review.
+          </p>
+        </div>
+      </section>
+
     </div>
   );
 };

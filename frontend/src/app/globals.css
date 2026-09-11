@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, "Cascadia Code", "Courier New", monospace;
+}
+
 :root {
   --background: #090d16;
   --foreground: #f8fafc;
@@ -31,15 +40,26 @@
   --risk-extreme-border: #6d28d9;
 }
 
+* {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
+  line-height: 1.5;
 }
 
-/* Tabular figures for scientific data presentation */
+/* Ensure tabular numeric figures for scientific data */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
@@ -60,6 +80,19 @@ body {
   background: #475569;
 }
 
+/* Smooth transitions for interactive elements */
+button, a, [role="button"] {
+  transition-property: color, background-color, border-color, opacity, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+
+/* Focus-visible accessibility rings */
+:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
 /* Pulsing beacon for Extreme Thermal Event (UTCI >= 46°C) */
 @keyframes extreme-pulse {
   0%, 100% {
@@ -72,3 +105,74 @@ body {
 .pulse-extreme {
   animation: extreme-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* Subtle fade-in for view transitions */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-view-enter {
+  animation: fade-in 200ms ease-out;
+}
+
+/* Dashboard header gradient shimmer */
+@keyframes shimmer-gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.dashboard-header-bg {
+  background: linear-gradient(135deg, #131d31 0%, #1a1020 25%, #1e1028 50%, #131d31 75%, #0f172a 100%);
+  background-size: 300% 300%;
+  animation: shimmer-gradient 12s ease infinite;
+}
+
+/* Ward cell interactive hover */
+@keyframes ward-glow {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.15); }
+}
+.ward-cell:hover {
+  animation: ward-glow 1.2s ease-in-out infinite;
+  z-index: 10;
+}
+
+/* Forecast strip scroll snap */
+.forecast-strip {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.forecast-strip > * {
+  scroll-snap-align: start;
+}
+
+/* Status badge subtle glow */
+@keyframes status-breathe {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+.status-breathe {
+  animation: status-breathe 3s ease-in-out infinite;
+}
+
+/* Ward tooltip appear */
+@keyframes tooltip-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.tooltip-enter {
+  animation: tooltip-in 150ms ease-out;
+}
+
+/* KPI card entrance stagger */
+@keyframes kpi-slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.kpi-card-enter {
+  animation: kpi-slide-up 400ms ease-out both;
+}
+.kpi-card-enter:nth-child(1) { animation-delay: 0ms; }
+.kpi-card-enter:nth-child(2) { animation-delay: 80ms; }
+.kpi-card-enter:nth-child(3) { animation-delay: 160ms; }
+.kpi-card-enter:nth-child(4) { animation-delay: 240ms; }

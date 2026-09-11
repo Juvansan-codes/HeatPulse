@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { Search, ShieldAlert, Clock, RefreshCw, Layers, Globe } from 'lucide-react';
 

@@ -66,7 +66,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside
       className={`bg-[#0B1120] border-r border-slate-800 flex flex-col justify-between transition-all duration-200 z-20 select-none ${
-        collapsed ? 'w-18' : 'w-64'
+        collapsed ? 'w-[72px]' : 'w-64'
       }`}
     >
       {/* Top navigation links */}
