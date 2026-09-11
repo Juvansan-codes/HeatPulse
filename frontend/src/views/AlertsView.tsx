@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { ALERT_PROTOCOLS } from '../lib/data';
-import { AlertProtocol, SeverityLevel } from '../lib/types';
+import { SeverityLevel } from '../lib/types';
 import { RiskBadge } from '../components/RiskBadge';
 import {
-  ShieldAlert,
   Building,
   HeartPulse,
   HardHat,
@@ -12,9 +11,7 @@ import {
   Check,
   Globe,
   Radio,
-  Share2,
-  FileText,
-  Clock
+  FileText
 } from 'lucide-react';
 
 export const AlertsView: React.FC = () => {
@@ -45,7 +42,7 @@ Emergency Contact: GCC Helpline 1913 | Medical Emergency 108`
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       {/* 1. Header & Severity Level Switcher */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">

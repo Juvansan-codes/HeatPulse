@@ -1,24 +1,21 @@
 @import "tailwindcss";
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-surface: var(--surface);
-  --color-surface-elevated: var(--surface-elevated);
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, "Cascadia Code", "Courier New", monospace;
+@layer base {
+  :root {
+    --background: #090d16;
+    --foreground: #f8fafc;
+    --card: #0f172a;
+    --card-foreground: #f8fafc;
+    --border: #1e293b;
+    --sidebar: #0b1120;
+    --sidebar-foreground: #94a3b8;
+    --sidebar-active: #1e293b;
+    --sidebar-border: #1e293b;
+  }
 }
 
+/* Severity Risk Level Color Variables */
 :root {
-  --background: #090d16;
-  --foreground: #f8fafc;
-  --surface: #0f172a;
-  --surface-elevated: #131d31;
-  --border-subtle: #1e293b;
-  --border-prominent: #334155;
-  --muted: #94a3b8;
-
-  /* Strict Project-Wide 5-Tier Severity Colors */
   --risk-normal: #10b981;
   --risk-normal-bg: rgba(16, 185, 129, 0.12);
   --risk-normal-border: #059669;
@@ -38,10 +35,15 @@
   --risk-extreme: #7c3aed;
   --risk-extreme-bg: rgba(124, 58, 237, 0.15);
   --risk-extreme-border: #6d28d9;
-}
 
-* {
-  box-sizing: border-box;
+  /* Metric Accent Colors */
+  --accent-utci: #ef4444;
+  --accent-wbgt: #f97316;
+  --accent-htsi: #f59e0b;
+  --accent-hi: #eab308;
+  --accent-hum: #06b6d4;
+  --accent-wind: #3b82f6;
+  --accent-solar: #ec4899;
 }
 
 html {
@@ -53,7 +55,7 @@ html {
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
   line-height: 1.5;
@@ -80,6 +82,12 @@ body {
   background: #475569;
 }
 
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 rgba(15, 23, 42, 0.6);
+}
+
 /* Smooth transitions for interactive elements */
 button, a, [role="button"] {
   transition-property: color, background-color, border-color, opacity, box-shadow;
@@ -91,6 +99,73 @@ button, a, [role="button"] {
 :focus-visible {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
+}
+
+/* ============================================
+   ANIMATION KEYFRAMES
+   ============================================ */
+
+/* Page view fade-in */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* Search modal entrance */
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-modalIn {
+  animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Backdrop entrance */
+@keyframes backdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-backdropIn {
+  animation: backdropIn 0.15s ease-out both;
+}
+
+/* Slide up for cards */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideUp {
+  animation: slideUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* Staggered card entrance — use with style={animationDelay} */
+.animate-stagger {
+  animation: slideUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
 /* Pulsing beacon for Extreme Thermal Event (UTCI >= 46°C) */
@@ -176,3 +251,61 @@ button, a, [role="button"] {
 .kpi-card-enter:nth-child(2) { animation-delay: 80ms; }
 .kpi-card-enter:nth-child(3) { animation-delay: 160ms; }
 .kpi-card-enter:nth-child(4) { animation-delay: 240ms; }
+
+/* Gentle dot pulse (less aggressive than animate-ping) */
+@keyframes gentlePulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.6);
+  }
+}
+.animate-gentlePulse {
+  animation: gentlePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Glassmorphism card variant */
+.glass-card {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+/* Interactive card hover glow */
+.card-hover-glow {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+.card-hover-glow:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.06), 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Severity-specific hover glows */
+.glow-normal:hover { box-shadow: 0 0 16px rgba(16, 185, 129, 0.1); }
+.glow-moderate:hover { box-shadow: 0 0 16px rgba(245, 158, 11, 0.1); }
+.glow-high:hover { box-shadow: 0 0 16px rgba(249, 115, 22, 0.1); }
+.glow-very-high:hover { box-shadow: 0 0 16px rgba(239, 68, 68, 0.1); }
+.glow-extreme:hover { box-shadow: 0 0 16px rgba(124, 58, 237, 0.15); }
+
+/* Active sidebar indicator */
+.sidebar-active-indicator {
+  position: relative;
+}
+.sidebar-active-indicator::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: #3b82f6;
+}

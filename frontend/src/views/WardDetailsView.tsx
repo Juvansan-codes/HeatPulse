@@ -1,22 +1,12 @@
 import React, { useState } from 'react';
-import { WARDS_DATA, CHENNAI_ZONES } from '../lib/data';
-import { WardRecord } from '../lib/types';
+import { WARDS_DATA } from '../lib/data';
 import { RiskBadge } from '../components/RiskBadge';
 import { MetricCard } from '../components/MetricCard';
 import {
-  Building2,
-  MapPin,
-  HeartPulse,
-  Users,
   Sun,
-  Wind,
-  Droplets,
   Activity,
-  FileCheck,
   AlertOctagon,
-  ChevronRight,
-  Calculator,
-  Compass
+  Calculator
 } from 'lucide-react';
 
 interface WardDetailsViewProps {
@@ -32,7 +22,7 @@ export const WardDetailsView: React.FC<WardDetailsViewProps> = ({
   const ward = WARDS_DATA.find((w) => w.ward_id === selectedWardId) || WARDS_DATA[0];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       {/* 1. Ward Selection Header & Primary Metadata */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>

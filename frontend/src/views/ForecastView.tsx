@@ -1,19 +1,10 @@
 import React, { useState } from 'react';
 import { FORECAST_DAYS } from '../lib/data';
-import { ForecastDay, SeverityLevel } from '../lib/types';
 import { RiskBadge } from '../components/RiskBadge';
 import {
-  Calendar,
-  Clock,
-  TrendingUp,
   Cpu,
   ShieldCheck,
-  AlertCircle,
-  Sun,
-  Wind,
-  Droplets,
-  Activity,
-  Info
+  Activity
 } from 'lucide-react';
 
 export const ForecastView: React.FC = () => {
@@ -24,7 +15,7 @@ export const ForecastView: React.FC = () => {
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       {/* 1. Header & Calibration Transparency Notice */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-lg">
         <div>

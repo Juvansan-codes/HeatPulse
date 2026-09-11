@@ -17,7 +17,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "HeatPulse — Impact-Based Heat Early Warning | Chennai GCC",
   description:
-    "Ward-level extreme heat early-warning intelligence platform for Greater Chennai Corporation. Integrating HTSI, UTCI, WBGT, population exposure, and healthcare adaptive capacity across 200 GCC wards.",
+    "Impact-based thermal early warning dashboard for Greater Chennai Corporation. Real-time UTCI, WBGT, and HTSI monitoring across 200 GCC wards with 5-day calibrated forecasts.",
   keywords: [
     "HeatPulse",
     "Chennai",
@@ -37,7 +37,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col bg-[#090d16] text-slate-100">
+        {children}
+      </body>
     </html>
   );
 }

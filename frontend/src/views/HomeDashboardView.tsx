@@ -27,7 +27,9 @@ import {
 
 interface HomeDashboardViewProps {
   onSelectWard: (wardId: number) => void;
-  onNavigateToMap: () => void;
+  onNavigateToMap?: () => void;
+  onNavigateToForecast?: () => void;
+  onNavigateToAlerts?: () => void;
 }
 
 /* ────────────────────────────────────────────────────────────────────────
