@@ -1,301 +1,467 @@
-import React, { useState } from 'react';
-import { FORECAST_DAYS } from '../lib/data';
+import React, { useState, useMemo } from 'react';
+import { FORECAST_DAYS, FORECAST_TODAY } from '../lib/data';
+import { ForecastDay, SeverityLevel } from '../lib/types';
 import { RiskBadge } from '../components/RiskBadge';
 import {
-  Cpu,
-  ShieldCheck,
-  Activity
+  Sun,
+  CalendarDays,
+  BarChart3,
+  Clock,
+  Thermometer,
+  TrendingUp,
+  ChevronRight,
 } from 'lucide-react';
 
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+type ChartMetric = 'utci' | 'wbgt' | 'htsi' | 'risk';
+
+interface HourlyRow {
+  hour: string;
+  temp: number;
+  utci: number;
+  wbgt: number;
+  htsi: number;
+  risk: SeverityLevel;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+const ALL_DAYS: ForecastDay[] = [FORECAST_TODAY, ...FORECAST_DAYS];
+
+const riskColor = (level: SeverityLevel) => {
+  const map: Record<SeverityLevel, string> = {
+    Normal: '#10b981',
+    Moderate: '#f59e0b',
+    High: '#f97316',
+    'Very High': '#ef4444',
+    Extreme: '#7c3aed',
+  };
+  return map[level] ?? '#94a3b8';
+};
+
+const riskBgClass = (level: SeverityLevel) => {
+  const map: Record<SeverityLevel, string> = {
+    Normal: 'bg-emerald-500/10 border-emerald-200',
+    Moderate: 'bg-amber-500/10 border-amber-200',
+    High: 'bg-orange-500/10 border-orange-200',
+    'Very High': 'bg-red-500/10 border-red-200',
+    Extreme: 'bg-purple-500/10 border-purple-200',
+  };
+  return map[level] ?? 'bg-slate-100 border-slate-200';
+};
+
+/**
+ * Generate hourly data for peak heat hours (10 AM – 6 PM).
+ * Uses a sine-bell diurnal model anchored to the day's max / min values.
+ */
+function generateHourlyRows(day: ForecastDay): HourlyRow[] {
+  const peakHours = [10, 12, 14, 16, 18];
+  return peakHours.map((h) => {
+    const factor = Math.max(0, Math.sin(((h - 4) / 16) * Math.PI));
+    const temp = +(day.min_temperature + factor * (day.max_temperature - day.min_temperature)).toFixed(1);
+    const utci = +(27 + factor * (day.max_utci - 27)).toFixed(1);
+    const wbgt = +(24 + factor * (day.max_wbgt - 24)).toFixed(1);
+    const htsi = +(30 + factor * (day.max_htsi - 30)).toFixed(1);
+
+    let risk: SeverityLevel = 'Normal';
+    if (htsi >= 80) risk = 'Extreme';
+    else if (htsi >= 72) risk = 'Very High';
+    else if (htsi >= 65) risk = 'High';
+    else if (htsi >= 50) risk = 'Moderate';
+
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const displayHour = h > 12 ? h - 12 : h;
+
+    return { hour: `${displayHour} ${ampm}`, temp, utci, wbgt, htsi, risk };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Metric configs for interactive chart
+// ---------------------------------------------------------------------------
+const METRIC_CFG: Record<ChartMetric, { label: string; unit: string; min: number; max: number; ticks: number[]; color: string; activeClass: string }> = {
+  utci: {
+    label: 'UTCI',
+    unit: '°C',
+    min: 30,
+    max: 50,
+    ticks: [50, 46, 42, 38, 34, 30],
+    color: '#dc2626',
+    activeClass: 'bg-red-600 text-white shadow-sm',
+  },
+  wbgt: {
+    label: 'WBGT',
+    unit: '°C',
+    min: 26,
+    max: 38,
+    ticks: [38, 36, 34, 32, 30, 28, 26],
+    color: '#ea580c',
+    activeClass: 'bg-orange-600 text-white shadow-sm',
+  },
+  htsi: {
+    label: 'HTSI',
+    unit: 'pts',
+    min: 40,
+    max: 100,
+    ticks: [100, 90, 80, 70, 60, 50, 40],
+    color: '#F47C20',
+    activeClass: 'bg-[#F47C20] text-white shadow-sm',
+  },
+  risk: {
+    label: 'Human Heat Risk',
+    unit: '',
+    min: 0,
+    max: 1,
+    ticks: [1.0, 0.8, 0.6, 0.4, 0.2, 0],
+    color: '#7c3aed',
+    activeClass: 'bg-purple-600 text-white shadow-sm',
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 export const ForecastView: React.FC = () => {
-  const [selectedDayOffset, setSelectedDayOffset] = useState<number>(1);
-  const selectedDay = FORECAST_DAYS.find((d) => d.day_offset === selectedDayOffset) || FORECAST_DAYS[0];
+  const [selectedOffset, setSelectedOffset] = useState<number>(0);
+  const [chartMetric, setChartMetric] = useState<ChartMetric>('utci');
+  const [hoveredDayOffset, setHoveredDayOffset] = useState<number | null>(null);
 
-  // 24-hour simulation data for the selected forecast day
-  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const selectedDay = ALL_DAYS.find((d) => d.day_offset === selectedOffset) ?? ALL_DAYS[0];
+  const hourlyRows = useMemo(() => generateHourlyRows(selectedDay), [selectedDay]);
+  const cfg = METRIC_CFG[chartMetric];
 
+  // ------ SVG chart geometry ------
+  const W = 640;
+  const H = 240;
+  const PL = 52;
+  const PR = 28;
+  const PT = 24;
+  const PB = 40;
+  const pW = W - PL - PR;
+  const pH = H - PT - PB;
+
+  const getY = (v: number) => {
+    const frac = (v - cfg.min) / (cfg.max - cfg.min);
+    return PT + (1 - Math.max(0, Math.min(1, frac))) * pH;
+  };
+  const getX = (i: number) => PL + (i / (ALL_DAYS.length - 1)) * pW;
+
+  const chartValue = (day: ForecastDay): number => {
+    if (chartMetric === 'utci') return day.max_utci;
+    if (chartMetric === 'wbgt') return day.max_wbgt;
+    if (chartMetric === 'htsi') return day.max_htsi;
+    return day.human_heat_risk;
+  };
+
+  const points = ALL_DAYS.map((d, i) => {
+    const v = chartValue(d);
+    return { ...d, x: getX(i), y: getY(v), v, idx: i };
+  });
+
+  const pathD = points.reduce((acc, pt, i, arr) => {
+    if (i === 0) return `M ${pt.x},${pt.y}`;
+    const prev = arr[i - 1];
+    const cx1 = prev.x + (pt.x - prev.x) * 0.45;
+    const cx2 = prev.x + (pt.x - prev.x) * 0.55;
+    return `${acc} C ${cx1},${prev.y} ${cx2},${pt.y} ${pt.x},${pt.y}`;
+  }, '');
+
+  const areaD = `${pathD} L ${points[points.length - 1].x},${PT + pH} L ${points[0].x},${PT + pH} Z`;
+
+  const formatVal = (v: number) => (chartMetric === 'risk' ? v.toFixed(2) : v.toFixed(1));
+
+  // ------ Render ------
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* 1. Header & Calibration Transparency Notice */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
-        <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-orange-50 text-[#F47C20] border border-orange-200">
-              PHASE 4 ML ENGINE
-            </span>
-            <span className="text-xs text-slate-500 font-medium">ECMWF / ERA5-Land Calibrated Predictor</span>
-          </div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-            5-Day Pointwise & Cumulative Thermal Forecast
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-3xl leading-relaxed">
-            Meteorological boundary states calibrated via gradient-boosted trees and empirical mean bias corrections, validated against Chennai's 2014–2025 canonical ground-truth archive.
-          </p>
-        </div>
+      {/* ================================================================
+          1. HEADER
+          ================================================================ */}
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 sm:p-8 shadow-lg">
+        {/* decorative sun */}
+        <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-gradient-to-br from-amber-400/20 to-orange-500/10 blur-2xl pointer-events-none" />
 
-        {/* Operational Recommendation Pill */}
-        <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 shrink-0 text-xs max-w-sm">
-          <div className="flex items-center gap-1.5 font-bold text-amber-700 mb-1">
-            <Cpu className="w-3.5 h-3.5" />
-            <span>Dual-Engine Model Architecture</span>
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Sun className="w-5 h-5 text-amber-400" />
+              <span className="text-xs font-mono font-bold tracking-widest text-amber-400/80 uppercase">
+                Phase F5 — Heat Forecast Engine
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              5-Day Heat Forecast
+            </h1>
+            <p className="text-sm text-slate-400 mt-1 flex items-center gap-1.5">
+              <CalendarDays className="w-4 h-4" />
+              Chennai — Greater Chennai Corporation
+            </p>
           </div>
-          <p className="text-[11px] text-slate-600 leading-normal">
-            • <strong>XGBoost:</strong> Calibrates pointwise states (Temp, RH, Wind, UTCI, WBGT).
-            <br />
-            • <strong>Mean Bias:</strong> Preserves cumulative persistence (<code className="text-slate-800 font-semibold">B24, B72, HTSI</code>).
-          </p>
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className="px-2 py-1 rounded bg-white/5 border border-white/10 font-mono">
+              ECMWF + XGBoost Calibrated
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* 2. 5-Day Progression Cards (D+1 to D+5) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
-        {FORECAST_DAYS.map((day) => {
-          const isSelected = day.day_offset === selectedDayOffset;
+      {/* ================================================================
+          2. DAY SELECTION CARDS (Today + D1–D5)
+          ================================================================ */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {ALL_DAYS.map((day) => {
+          const isSel = day.day_offset === selectedOffset;
           return (
             <button
               key={day.day_offset}
               type="button"
-              onClick={() => setSelectedDayOffset(day.day_offset)}
-              className={`p-4 rounded-xl border text-left transition-all duration-150 cursor-pointer flex flex-col justify-between shadow-xs ${
-                isSelected
-                  ? 'bg-orange-50/30 border-[#F47C20] ring-2 ring-[#F47C20]/30'
-                  : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+              onClick={() => setSelectedOffset(day.day_offset)}
+              className={`relative group p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between ${
+                isSel
+                  ? `${riskBgClass(day.risk_level)} ring-2 ring-offset-1 ring-current`
+                  : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-md'
               }`}
+              style={isSel ? { borderColor: riskColor(day.risk_level), color: riskColor(day.risk_level) } : undefined}
             >
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] font-mono text-slate-500 uppercase font-semibold">
-                    D+{day.day_offset} • {day.day_name}
-                  </span>
-                  <RiskBadge level={day.risk_level} size="sm" />
-                </div>
-                <div className="text-sm font-bold text-slate-900 mb-2">{day.date}</div>
+              {/* Day label + badge */}
+              <div className="flex items-center justify-between mb-2.5">
+                <span className={`text-[11px] font-mono font-bold uppercase tracking-wider ${isSel ? 'text-current' : 'text-slate-500'}`}>
+                  {day.day_offset === 0 ? 'TODAY' : day.day_name}
+                </span>
+                <RiskBadge level={day.risk_level} size="sm" showDot={false} />
+              </div>
 
-                {/* Primary Metric: Max HTSI & Max UTCI */}
-                <div className="space-y-1 py-2 border-y border-slate-100">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Peak UTCI:</span>
-                    <span className="font-mono font-bold text-amber-700 tabular-nums">
-                      {day.max_utci}°C
-                    </span>
+              {/* Key metrics */}
+              <div className="space-y-2 text-xs text-slate-700">
+                <div>
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">Max UTCI</div>
+                  <div className="font-mono font-bold text-base tabular-nums" style={{ color: isSel ? riskColor(day.risk_level) : '#0f172a' }}>
+                    {day.max_utci}°C
                   </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Peak WBGT:</span>
-                    <span className="font-mono font-semibold text-slate-800 tabular-nums">
-                      {day.max_wbgt}°C
-                    </span>
+                </div>
+                <div>
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">Max HTSI</div>
+                  <div className="font-mono font-bold text-sm tabular-nums text-slate-800">
+                    {day.max_htsi}
                   </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Max Air Temp:</span>
-                    <span className="font-mono font-semibold text-slate-700 tabular-nums">
-                      {day.max_temperature}°C
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">HTSI Index:</span>
-                    <span className="font-mono font-bold text-red-600 tabular-nums">
-                      {day.max_htsi}
-                    </span>
+                </div>
+                <div className="pt-1.5 mt-1.5 border-t border-slate-100">
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">Human Heat Risk</div>
+                  <div className="font-mono font-bold text-sm tabular-nums" style={{ color: riskColor(day.risk_level) }}>
+                    {day.human_heat_risk.toFixed(2)}
                   </div>
                 </div>
               </div>
 
-              {/* Night Stress & Lead MAE footer */}
-              <div className="mt-3 pt-2 text-[10px] text-slate-500 flex items-center justify-between font-mono">
-                <span>MAE ±{day.ml_lead_mae_temp}°C</span>
-                {day.nighttime_stress_flag ? (
-                  <span className="text-purple-700 font-semibold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse" />
-                    Night Load
-                  </span>
-                ) : (
-                  <span className="text-slate-400">Night Relief</span>
-                )}
-              </div>
+              {/* Selected indicator */}
+              {isSel && (
+                <div
+                  className="absolute bottom-0 inset-x-0 h-1 rounded-b-xl"
+                  style={{ backgroundColor: riskColor(day.risk_level) }}
+                />
+              )}
             </button>
           );
         })}
       </div>
 
-      {/* 3. Detailed Diurnal Timeline (24 Hours for Selected Day) */}
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
-          <div>
-            <h3 className="font-bold text-sm text-slate-900 uppercase tracking-wide flex items-center gap-2">
-              <Activity className="w-4 h-4 text-[#F47C20]" />
-              Diurnal Hourly Thermal Trajectory — {selectedDay.day_name} ({selectedDay.date})
+      {/* ================================================================
+          3. INTERACTIVE CHART
+          ================================================================ */}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
+        {/* Toolbar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-4.5 h-4.5 text-[#F47C20]" />
+            <h3 className="font-bold text-sm text-slate-900 uppercase tracking-wide">
+              Forecast Metric Comparison
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              IST Hourly Progression (00:00 to 23:00). Highlighting peak mid-day danger window and nocturnal retention burden.
-            </p>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-mono font-medium">
-            <span className="flex items-center gap-1.5 text-red-600">
-              <span className="w-2.5 h-2.5 rounded-sm bg-red-500" />
-              UTCI (°C)
-            </span>
-            <span className="flex items-center gap-1.5 text-amber-700">
-              <span className="w-2.5 h-2.5 rounded-sm bg-amber-500" />
-              WBGT (°C)
-            </span>
-            <span className="flex items-center gap-1.5 text-blue-600">
-              <span className="w-2.5 h-2.5 rounded-sm bg-blue-500" />
-              Air Temp (°C)
-            </span>
+          {/* Metric toggle pills */}
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs">
+            {(Object.keys(METRIC_CFG) as ChartMetric[]).map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setChartMetric(key)}
+                className={`px-3 py-1.5 rounded font-semibold cursor-pointer transition-all duration-150 ${
+                  chartMetric === key ? METRIC_CFG[key].activeClass : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                }`}
+              >
+                {METRIC_CFG[key].label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Hourly Chart Bars Visualization */}
-        <div className="overflow-x-auto py-2">
-          <div className="min-w-[700px] h-56 flex items-end gap-1.5 px-2 relative">
-            {/* Threshold line for UTCI 38°C (Very Strong Stress) */}
-            <div className="absolute inset-x-0 top-[28%] border-b border-dashed border-red-300 pointer-events-none z-10 flex items-center justify-end pr-2">
-              <span className="text-[10px] font-mono text-red-700 bg-white border border-red-200 px-1.5 py-0.5 rounded shadow-2xs font-semibold">
-                UTCI 38°C Strong Stress Threshold
-              </span>
-            </div>
+        {/* SVG Chart */}
+        <div className="p-5 pt-2">
+          <div className="w-full overflow-x-auto">
+            <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-52 sm:h-60 select-none font-mono">
+              <defs>
+                <linearGradient id="fg-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={cfg.color} stopOpacity="0.22" />
+                  <stop offset="100%" stopColor={cfg.color} stopOpacity="0.0" />
+                </linearGradient>
+              </defs>
 
-            {/* Threshold line for UTCI 32°C (Moderate/Strong) */}
-            <div className="absolute inset-x-0 top-[52%] border-b border-dashed border-amber-300 pointer-events-none z-10 flex items-center justify-end pr-2">
-              <span className="text-[10px] font-mono text-amber-800 bg-white border border-amber-200 px-1.5 py-0.5 rounded shadow-2xs font-semibold">
-                UTCI 32°C Threshold
-              </span>
-            </div>
+              {/* Grid + Y labels */}
+              {cfg.ticks.map((t) => {
+                const y = getY(t);
+                return (
+                  <g key={t}>
+                    <line x1={PL} y1={y} x2={W - PR} y2={y} stroke="#e2e8f0" strokeWidth="1" />
+                    <text x={PL - 8} y={y + 4} textAnchor="end" className="text-[10px] fill-slate-400 font-mono">
+                      {chartMetric === 'risk' ? t.toFixed(1) : t}
+                    </text>
+                  </g>
+                );
+              })}
 
-            {hours.map((hour) => {
-              const isNight = hour >= 22 || hour <= 6;
-              const isPeak = hour >= 12 && hour <= 15;
+              {/* Area */}
+              <path d={areaD} fill="url(#fg-grad)" />
 
-              // Compute diurnal bell curve
-              const middayPeakFactor = Math.sin(((hour - 4) / 16) * Math.PI);
-              const factor = Math.max(0, middayPeakFactor);
-              
-              const simulatedUtci = 27 + factor * (selectedDay.max_utci - 27);
-              const simulatedWbgt = 24 + factor * (selectedDay.max_wbgt - 24);
-              const simulatedTemp = selectedDay.min_temperature + factor * (selectedDay.max_temperature - selectedDay.min_temperature);
+              {/* Line */}
+              <path d={pathD} fill="none" stroke={cfg.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
-              // Height in %
-              const barHeightPercent = Math.min(100, Math.max(15, (simulatedUtci / 50) * 100));
+              {/* Data points */}
+              {points.map((pt) => {
+                const isHovered = hoveredDayOffset === pt.day_offset;
+                const isSel = selectedOffset === pt.day_offset;
+                const dotC = riskColor(pt.risk_level);
+                return (
+                  <g
+                    key={pt.day_offset}
+                    className="cursor-pointer"
+                    onMouseEnter={() => setHoveredDayOffset(pt.day_offset)}
+                    onMouseLeave={() => setHoveredDayOffset(null)}
+                    onClick={() => setSelectedOffset(pt.day_offset)}
+                  >
+                    {/* Vertical guide */}
+                    {(isHovered || isSel) && (
+                      <line x1={pt.x} y1={PT} x2={pt.x} y2={PT + pH} stroke={isSel ? cfg.color : '#94a3b8'} strokeWidth="1.5" strokeDasharray="3,3" />
+                    )}
 
-              return (
-                <div
-                  key={hour}
-                  className={`flex-1 flex flex-col items-center justify-end h-full rounded-t py-1 transition-all ${
-                    isNight
-                      ? 'bg-purple-50/50 border-b-2 border-b-purple-500'
-                      : isPeak
-                      ? 'bg-red-50/60 border-b-2 border-b-red-500'
-                      : 'hover:bg-slate-100/60'
-                  }`}
-                  title={`${hour}:00 IST | UTCI: ${simulatedUtci.toFixed(1)}°C, WBGT: ${simulatedWbgt.toFixed(1)}°C, Temp: ${simulatedTemp.toFixed(1)}°C`}
-                >
-                  <div
-                    className="w-full max-w-[14px] rounded-t transition-all"
-                    style={{
-                      height: `${barHeightPercent}%`,
-                      backgroundColor: simulatedUtci >= 38 ? '#ef4444' : simulatedUtci >= 32 ? '#f59e0b' : '#3b82f6'
-                    }}
-                  />
-                  <span className="text-[9px] font-mono text-slate-500 mt-2 font-medium">
-                    {hour.toString().padStart(2, '0')}h
-                  </span>
-                </div>
-              );
-            })}
+                    {/* Halo */}
+                    <circle cx={pt.x} cy={pt.y} r={isHovered || isSel ? 12 : 8} fill={dotC} fillOpacity={isHovered || isSel ? 0.25 : 0.12} className="transition-all duration-200" />
+                    {/* Dot */}
+                    <circle cx={pt.x} cy={pt.y} r={isHovered || isSel ? 6 : 4.5} fill={dotC} stroke="#fff" strokeWidth="2" className="transition-all duration-200" />
+
+                    {/* Value */}
+                    <text x={pt.x} y={pt.y - 14} textAnchor="middle" className={`font-mono font-bold ${isHovered || isSel ? 'text-[12px] fill-slate-900' : 'text-[11px] fill-slate-600'}`}>
+                      {formatVal(pt.v)}{cfg.unit && cfg.unit !== 'pts' && cfg.unit !== '' ? cfg.unit : ''}
+                    </text>
+
+                    {/* X label */}
+                    <text x={pt.x} y={PT + pH + 18} textAnchor="middle" className={`text-[11px] font-mono font-bold ${isSel ? 'fill-[#F47C20]' : 'fill-slate-700'}`}>
+                      {pt.day_offset === 0 ? 'Today' : `D+${pt.day_offset}`}
+                    </text>
+                    <text x={pt.x} y={PT + pH + 30} textAnchor="middle" className="text-[10px] fill-slate-400 font-sans">
+                      {pt.day_name.slice(0, 3)}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
           </div>
-        </div>
-
-        {/* Legend for Time Windows */}
-        <div className="flex flex-wrap items-center justify-between pt-3 border-t border-slate-200 text-xs text-slate-600 font-medium">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded bg-purple-100 border border-purple-400" />
-              <span>22:00–06:00 IST Nighttime Burden (N)</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded bg-red-100 border border-red-400" />
-              <span>12:00–15:00 IST Peak Sun Exertion Danger</span>
-            </span>
-          </div>
-          <span className="font-mono text-[11px] text-slate-500">
-            Timestamps strictly converted to Indian Standard Time (UTC+05:30)
-          </span>
         </div>
       </div>
 
-      {/* 4. Scientific Audit: Lead-Time Performance Verification Table */}
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-bold text-sm text-slate-900 uppercase tracking-wide flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              Lead-Time Accuracy & Model Calibration Audit (Phase 4 Step 3)
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Continuous Mean Absolute Error (MAE) verified against unseen 2025 ground truth for Chennai.
-            </p>
+      {/* ================================================================
+          4. HOURLY FORECAST TABLE FOR SELECTED DAY
+          ================================================================ */}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
+        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <Clock className="w-4.5 h-4.5 text-[#F47C20]" />
+            <div>
+              <h3 className="font-bold text-sm text-slate-900 uppercase tracking-wide">
+                Hourly Peak-Window Forecast
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {selectedDay.day_offset === 0 ? 'Today' : selectedDay.day_name} — {selectedDay.date} · 10 AM – 6 PM IST
+              </p>
+            </div>
           </div>
-          <span className="text-[11px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-semibold">
-            PASSED VALIDATION
-          </span>
+          <RiskBadge level={selectedDay.risk_level} size="md" />
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-500 text-[11px] uppercase tracking-wider font-semibold bg-slate-50">
-                <th className="py-2.5 px-3">Forecast Lead Day</th>
-                <th className="py-2.5 px-3">ECMWF Raw Temperature MAE</th>
-                <th className="py-2.5 px-3">XGBoost Calibrated Temp MAE</th>
-                <th className="py-2.5 px-3">Raw HTSI MAE</th>
-                <th className="py-2.5 px-3">Mean Bias Calibrated HTSI MAE</th>
-                <th className="py-2.5 px-3 text-right">Error Reduction</th>
+              <tr className="border-b border-slate-200 text-[11px] text-slate-500 uppercase tracking-wider font-semibold bg-slate-50/80">
+                <th className="py-3 px-4 w-24">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3 h-3" />
+                    Time
+                  </div>
+                </th>
+                <th className="py-3 px-4">
+                  <div className="flex items-center gap-1.5">
+                    <Thermometer className="w-3 h-3 text-red-500" />
+                    Temp (°C)
+                  </div>
+                </th>
+                <th className="py-3 px-4">UTCI (°C)</th>
+                <th className="py-3 px-4">WBGT (°C)</th>
+                <th className="py-3 px-4">
+                  <div className="flex items-center gap-1.5">
+                    <TrendingUp className="w-3 h-3 text-[#F47C20]" />
+                    HTSI
+                  </div>
+                </th>
+                <th className="py-3 px-4 text-right">Risk</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 font-mono">
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-2.5 px-3 font-sans font-semibold text-slate-900">Day 1 (24 Hours)</td>
-                <td className="py-2.5 px-3 text-slate-500">0.93 °C</td>
-                <td className="py-2.5 px-3 text-emerald-700 font-semibold">0.85 °C</td>
-                <td className="py-2.5 px-3 text-slate-500">3.63 pts</td>
-                <td className="py-2.5 px-3 text-emerald-700 font-semibold">2.93 pts</td>
-                <td className="py-2.5 px-3 text-right text-emerald-700 font-bold">+19.3%</td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-2.5 px-3 font-sans font-semibold text-slate-900">Day 2 (48 Hours)</td>
-                <td className="py-2.5 px-3 text-slate-500">0.97 °C</td>
-                <td className="py-2.5 px-3 text-emerald-700 font-semibold">0.88 °C</td>
-                <td className="py-2.5 px-3 text-slate-500">3.75 pts</td>
-                <td className="py-2.5 px-3 text-emerald-700 font-semibold">3.00 pts</td>
-                <td className="py-2.5 px-3 text-right text-emerald-700 font-bold">+20.0%</td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-2.5 px-3 font-sans font-semibold text-slate-900">Day 3 (72 Hours)</td>
-                <td className="py-2.5 px-3 text-slate-500">1.03 °C</td>
-                <td className="py-2.5 px-3 text-emerald-700 font-semibold">0.92 °C</td>
-                <td className="py-2.5 px-3 text-slate-500">4.05 pts</td>
-                <td className="py-2.5 px-3 text-emerald-700 font-semibold">3.14 pts</td>
-                <td className="py-2.5 px-3 text-right text-emerald-700 font-bold">+22.5%</td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-2.5 px-3 font-sans font-semibold text-slate-900">Day 4 (96 Hours)</td>
-                <td className="py-2.5 px-3 text-slate-500">1.06 °C</td>
-                <td className="py-2.5 px-3 text-emerald-700 font-semibold">0.93 °C</td>
-                <td className="py-2.5 px-3 text-slate-500">4.64 pts</td>
-                <td className="py-2.5 px-3 text-emerald-700 font-semibold">3.22 pts</td>
-                <td className="py-2.5 px-3 text-right text-emerald-700 font-bold">+30.6%</td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-2.5 px-3 font-sans font-semibold text-slate-900">Day 5 (120 Hours)</td>
-                <td className="py-2.5 px-3 text-slate-500">1.13 °C</td>
-                <td className="py-2.5 px-3 text-emerald-700 font-semibold">0.95 °C</td>
-                <td className="py-2.5 px-3 text-slate-500">4.89 pts</td>
-                <td className="py-2.5 px-3 text-emerald-700 font-semibold">3.32 pts</td>
-                <td className="py-2.5 px-3 text-right text-emerald-700 font-bold">+32.1%</td>
-              </tr>
+            <tbody className="divide-y divide-slate-100">
+              {hourlyRows.map((row) => {
+                const isPeak = row.hour === '12 PM' || row.hour === '2 PM';
+                return (
+                  <tr key={row.hour} className={`transition-colors ${isPeak ? 'bg-red-50/40' : 'hover:bg-slate-50/60'}`}>
+                    <td className="py-3 px-4 font-mono font-bold text-slate-900 whitespace-nowrap">
+                      {row.hour}
+                      {isPeak && (
+                        <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                      )}
+                    </td>
+                    <td className="py-3 px-4 font-mono tabular-nums text-slate-700">{row.temp}</td>
+                    <td className="py-3 px-4 font-mono tabular-nums">
+                      <span style={{ color: row.utci >= 38 ? '#dc2626' : row.utci >= 32 ? '#f97316' : '#64748b' }} className="font-semibold">
+                        {row.utci}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-mono tabular-nums">
+                      <span style={{ color: row.wbgt >= 33 ? '#ea580c' : row.wbgt >= 28 ? '#f59e0b' : '#64748b' }} className="font-semibold">
+                        {row.wbgt}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-mono tabular-nums font-bold" style={{ color: riskColor(row.risk) }}>
+                      {row.htsi}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <RiskBadge level={row.risk} size="sm" />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
+        </div>
+
+        {/* Footer legend */}
+        <div className="p-4 bg-slate-50/60 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-500">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded bg-red-100 border border-red-400" />
+              12 PM – 2 PM IST Peak Danger Window
+            </span>
+          </div>
+          <span className="font-mono">
+            Diurnal model · IST UTC+05:30
+          </span>
         </div>
       </div>
     </div>

@@ -44,7 +44,8 @@ export const FORECAST_TODAY: ForecastDay = {
   risk_level: 'Very High',
   nighttime_stress_flag: true,
   ml_lead_mae_temp: 0.0,
-  ml_lead_mae_htsi: 0.0
+  ml_lead_mae_htsi: 0.0,
+  human_heat_risk: 0.72
 };
 
 export const FORECAST_DAYS: ForecastDay[] = [
@@ -62,7 +63,8 @@ export const FORECAST_DAYS: ForecastDay[] = [
     risk_level: 'Very High',
     nighttime_stress_flag: true,
     ml_lead_mae_temp: 0.85,
-    ml_lead_mae_htsi: 3.02
+    ml_lead_mae_htsi: 3.02,
+    human_heat_risk: 0.68
   },
   {
     day_offset: 2,
@@ -78,7 +80,8 @@ export const FORECAST_DAYS: ForecastDay[] = [
     risk_level: 'Very High',
     nighttime_stress_flag: true,
     ml_lead_mae_temp: 0.88,
-    ml_lead_mae_htsi: 3.18
+    ml_lead_mae_htsi: 3.18,
+    human_heat_risk: 0.74
   },
   {
     day_offset: 3,
@@ -94,7 +97,8 @@ export const FORECAST_DAYS: ForecastDay[] = [
     risk_level: 'Very High',
     nighttime_stress_flag: true,
     ml_lead_mae_temp: 0.92,
-    ml_lead_mae_htsi: 3.36
+    ml_lead_mae_htsi: 3.36,
+    human_heat_risk: 0.78
   },
   {
     day_offset: 4,
@@ -110,7 +114,8 @@ export const FORECAST_DAYS: ForecastDay[] = [
     risk_level: 'High',
     nighttime_stress_flag: false,
     ml_lead_mae_temp: 0.93,
-    ml_lead_mae_htsi: 3.39
+    ml_lead_mae_htsi: 3.39,
+    human_heat_risk: 0.52
   },
   {
     day_offset: 5,
@@ -126,7 +131,8 @@ export const FORECAST_DAYS: ForecastDay[] = [
     risk_level: 'Moderate',
     nighttime_stress_flag: false,
     ml_lead_mae_temp: 0.95,
-    ml_lead_mae_htsi: 3.45
+    ml_lead_mae_htsi: 3.45,
+    human_heat_risk: 0.38
   }
 ];
 
