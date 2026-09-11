@@ -40,42 +40,42 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 
   return (
     <div
-      className={`bg-slate-900/90 backdrop-blur border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between transition-all duration-200 hover:border-slate-700 hover:-translate-y-0.5 hover:shadow-lg shadow-md ${accentClass} ${className}`}
+      className={`bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between transition-all duration-200 hover:border-slate-300 hover:-translate-y-0.5 hover:shadow-md shadow-xs ${accentClass} ${className}`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
           {label}
         </span>
         {statusBadge && <div>{statusBadge}</div>}
       </div>
 
       <div className="my-1 flex items-baseline gap-1.5">
-        <span className="text-3xl font-bold font-mono tracking-tight text-slate-50 tabular-nums">
+        <span className="text-3xl font-bold font-mono tracking-tight text-slate-900 tabular-nums">
           {value}
         </span>
-        {unit && <span className="text-sm font-medium text-slate-400">{unit}</span>}
+        {unit && <span className="text-sm font-medium text-slate-500">{unit}</span>}
       </div>
 
-      <div className="mt-2 pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
+      <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
         <div className="truncate pr-2">
           {subtitle && <span>{subtitle}</span>}
           {delta && (
             <span
               className={`font-mono text-[11px] font-medium ${
                 delta.isNeutral
-                  ? 'text-slate-400'
+                  ? 'text-slate-500'
                   : delta.isIncrease
-                  ? 'text-amber-400'
-                  : 'text-emerald-400'
+                  ? 'text-amber-700'
+                  : 'text-emerald-700'
               }`}
             >
               {delta.isIncrease ? '▲ ' : delta.isNeutral ? '• ' : '▼ '}
-              {delta.value} {delta.label && <span className="text-slate-400 font-sans">{delta.label}</span>}
+              {delta.value} {delta.label && <span className="text-slate-500 font-sans">{delta.label}</span>}
             </span>
           )}
         </div>
         {provenanceTag && (
-          <span className="shrink-0 text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-400 border border-slate-700/60">
+          <span className="shrink-0 text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
             {provenanceTag}
           </span>
         )}

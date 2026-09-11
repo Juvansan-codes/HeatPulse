@@ -18,34 +18,34 @@ export const RiskBadge: React.FC<RiskBadgeProps> = ({
 }) => {
   const styles: Record<SeverityLevel, { bg: string; text: string; border: string; dot: string }> = {
     Normal: {
-      bg: 'bg-emerald-500/10',
-      text: 'text-emerald-400',
-      border: 'border-emerald-500/30',
-      dot: 'bg-emerald-400'
+      bg: 'bg-emerald-50',
+      text: 'text-emerald-700',
+      border: 'border-emerald-200',
+      dot: 'bg-emerald-500'
     },
     Moderate: {
-      bg: 'bg-amber-500/10',
-      text: 'text-amber-400',
-      border: 'border-amber-500/30',
-      dot: 'bg-amber-400'
+      bg: 'bg-amber-50',
+      text: 'text-amber-700',
+      border: 'border-amber-200',
+      dot: 'bg-amber-500'
     },
     High: {
-      bg: 'bg-orange-500/10',
-      text: 'text-orange-400',
-      border: 'border-orange-500/30',
-      dot: 'bg-orange-400'
+      bg: 'bg-orange-50',
+      text: 'text-orange-700',
+      border: 'border-orange-200',
+      dot: 'bg-orange-500'
     },
     'Very High': {
-      bg: 'bg-red-500/10',
-      text: 'text-red-400',
-      border: 'border-red-500/30',
-      dot: 'bg-red-400'
+      bg: 'bg-red-50',
+      text: 'text-red-700',
+      border: 'border-red-200',
+      dot: 'bg-red-500'
     },
     Extreme: {
-      bg: 'bg-purple-600/15',
-      text: 'text-purple-300',
-      border: 'border-purple-500/40',
-      dot: 'bg-purple-400'
+      bg: 'bg-purple-50',
+      text: 'text-purple-700',
+      border: 'border-purple-200',
+      dot: 'bg-purple-500'
     }
   };
 

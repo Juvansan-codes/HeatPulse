@@ -11,86 +11,86 @@ export const MethodologyView: React.FC = () => {
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* 1. Header */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-lg">
-        <div className="flex items-center gap-2 mb-1">
-          <BookOpen className="w-4 h-4 text-blue-400" />
-          <span className="text-xs font-mono font-semibold text-blue-400 uppercase tracking-wider">
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
+        <div className="flex items-center gap-2 mb-1.5">
+          <BookOpen className="w-4 h-4 text-[#F47C20]" />
+          <span className="text-xs font-mono font-bold text-[#F47C20] uppercase tracking-wider">
             SCIENTIFIC FOUNDATIONS & PROVENANCE
           </span>
         </div>
-        <h2 className="text-xl font-bold text-white tracking-tight">
+        <h2 className="text-xl font-bold text-slate-900 tracking-tight">
           HeatPulse Scientific Methodology & Mathematical Formulations
         </h2>
-        <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-4xl leading-relaxed">
+        <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-4xl leading-relaxed">
           Open-science documentation of Chennai's impact-based thermal early-warning architecture, physics-based thermal comfort models, machine learning calibration, and operational risk formulations.
         </p>
       </div>
 
       {/* 2. End-to-End System Architecture Pipeline */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
-        <h3 className="font-bold text-sm text-slate-100 uppercase tracking-wide flex items-center gap-2">
-          <GitBranch className="w-4 h-4 text-blue-400" />
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+        <h3 className="font-bold text-sm text-slate-900 uppercase tracking-wide flex items-center gap-2">
+          <GitBranch className="w-4 h-4 text-[#F47C20]" />
           End-to-End Scientific Architecture Pipeline
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3 text-xs font-mono relative">
-          <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5 flex flex-col justify-between">
+          <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5 flex flex-col justify-between">
             <div>
-              <span className="text-[10px] text-blue-400 uppercase font-bold block">01 External Ingestion</span>
-              <div className="font-bold text-slate-200 font-sans mt-1">Meteorology & GIS</div>
-              <p className="text-[11px] text-slate-400 font-sans mt-1">
+              <span className="text-[10px] text-[#F47C20] uppercase font-bold block">01 External Ingestion</span>
+              <div className="font-bold text-slate-900 font-sans mt-1">Meteorology & GIS</div>
+              <p className="text-[11px] text-slate-600 font-sans mt-1">
                 ERA5-Land cloud Zarr ARCO (2014-2023, 5 grids), 2025 GCC 200-ward GeoJSON, WorldPop 2020.
               </p>
             </div>
-            <div className="hidden md:flex items-center justify-end text-blue-500/60 pt-2">
+            <div className="hidden md:flex items-center justify-end text-slate-400 pt-2">
               <ChevronRight className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5 flex flex-col justify-between">
+          <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5 flex flex-col justify-between">
             <div>
-              <span className="text-[10px] text-amber-400 uppercase font-bold block">02 Biophysical Engine</span>
-              <div className="font-bold text-slate-200 font-sans mt-1">Thermal Diagnostics</div>
-              <p className="text-[11px] text-slate-400 font-sans mt-1">
+              <span className="text-[10px] text-amber-700 uppercase font-bold block">02 Biophysical Engine</span>
+              <div className="font-bold text-slate-900 font-sans mt-1">Thermal Diagnostics</div>
+              <p className="text-[11px] text-slate-600 font-sans mt-1">
                 Tmrt (ISO 7726 solar balance), Liljegren outdoor WBGT, and 6th-order polynomial UTCI.
               </p>
             </div>
-            <div className="hidden md:flex items-center justify-end text-amber-500/60 pt-2">
+            <div className="hidden md:flex items-center justify-end text-slate-400 pt-2">
               <ChevronRight className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5 flex flex-col justify-between">
+          <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5 flex flex-col justify-between">
             <div>
-              <span className="text-[10px] text-red-400 uppercase font-bold block">03 HTSI Fusion</span>
-              <div className="font-bold text-slate-200 font-sans mt-1">Thermal Stress Index</div>
-              <p className="text-[11px] text-slate-400 font-sans mt-1">
+              <span className="text-[10px] text-red-700 uppercase font-bold block">03 HTSI Fusion</span>
+              <div className="font-bold text-slate-900 font-sans mt-1">Thermal Stress Index</div>
+              <p className="text-[11px] text-slate-600 font-sans mt-1">
                 Continuous weighted composite: 0.64U + 0.16W + 0.10B24 + 0.06B72 + 0.04N (0–100 score).
               </p>
             </div>
-            <div className="hidden md:flex items-center justify-end text-red-500/60 pt-2">
+            <div className="hidden md:flex items-center justify-end text-slate-400 pt-2">
               <ChevronRight className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5 flex flex-col justify-between">
+          <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5 flex flex-col justify-between">
             <div>
-              <span className="text-[10px] text-purple-400 uppercase font-bold block">04 ML Calibration</span>
-              <div className="font-bold text-slate-200 font-sans mt-1">XGBoost + Mean Bias</div>
-              <p className="text-[11px] text-slate-400 font-sans mt-1">
+              <span className="text-[10px] text-purple-700 uppercase font-bold block">04 ML Calibration</span>
+              <div className="font-bold text-slate-900 font-sans mt-1">XGBoost + Mean Bias</div>
+              <p className="text-[11px] text-slate-600 font-sans mt-1">
                 XGBoost on pointwise weather & thermal states; Mean Bias on cumulative multi-day persistence.
               </p>
             </div>
-            <div className="hidden md:flex items-center justify-end text-purple-500/60 pt-2">
+            <div className="hidden md:flex items-center justify-end text-slate-400 pt-2">
               <ChevronRight className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5 flex flex-col justify-between">
+          <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5 flex flex-col justify-between">
             <div>
-              <span className="text-[10px] text-emerald-400 uppercase font-bold block">05 Ward Risk Model</span>
-              <div className="font-bold text-slate-200 font-sans mt-1">Formula B Triage</div>
-              <p className="text-[11px] text-slate-400 font-sans mt-1">
+              <span className="text-[10px] text-emerald-700 uppercase font-bold block">05 Ward Risk Model</span>
+              <div className="font-bold text-slate-900 font-sans mt-1">Formula B Triage</div>
+              <p className="text-[11px] text-slate-600 font-sans mt-1">
                 Risk = H × E × (0.5 + 0.5V) applied to exactly 200 GCC wards for operational prioritization.
               </p>
             </div>
@@ -101,32 +101,32 @@ export const MethodologyView: React.FC = () => {
       {/* 3. Core Mathematical Formulations */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* HTSI Formulation */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-lg space-y-3">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-slate-100 uppercase tracking-wide">
+            <h3 className="font-bold text-sm text-slate-900 uppercase tracking-wide">
               1. Human Thermal Stress Index (HTSI)
             </h3>
-            <span className="font-mono text-[10px] text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20 font-semibold">
+            <span className="font-mono text-[10px] text-[#F47C20] bg-orange-50 px-2 py-0.5 rounded border border-orange-200 font-semibold">
               GRID LEVEL
             </span>
           </div>
 
-          <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 font-mono text-xs text-amber-300">
+          <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 font-mono text-xs text-[#F47C20] font-bold">
             HTSI = 0.64·U + 0.16·W + 0.10·B₂₄ + 0.06·B₇₂ + 0.04·N
           </div>
 
-          <ul className="text-xs text-slate-300 space-y-2 leading-relaxed">
+          <ul className="text-xs text-slate-700 space-y-2 leading-relaxed">
             <li>
-              <strong className="text-white font-mono">U (UTCI Continuous Score):</strong> Continuous piecewise interpolation where ≤26°C maps to 0–20, 26–32°C to 20–40, 32–38°C to 40–60, 38–46°C to 60–80, and 46–56°C to 80–100.
+              <strong className="text-slate-900 font-mono">U (UTCI Continuous Score):</strong> Continuous piecewise interpolation where ≤26°C maps to 0–20, 26–32°C to 20–40, 32–38°C to 40–60, 38–46°C to 60–80, and 46–56°C to 80–100.
             </li>
             <li>
-              <strong className="text-white font-mono">W (Local WBGT Climatological Anomaly):</strong> Anchored against 2014–2023 grid empirical percentiles: P50 (0), P90 (50), P95 (70), P97.5 (85), P99 (100).
+              <strong className="text-slate-900 font-mono">W (Local WBGT Climatological Anomaly):</strong> Anchored against 2014–2023 grid empirical percentiles: P50 (0), P90 (50), P95 (70), P97.5 (85), P99 (100).
             </li>
             <li>
-              <strong className="text-white font-mono">B₂₄ & B₇₂ (Trailing UTCI Burden):</strong> Inclusive rolling mean of <code className="text-slate-200">max(0, U - 20)</code> over 24 and 72 chronological hourly records per grid. Zero future leakage.
+              <strong className="text-slate-900 font-mono">B₂₄ & B₇₂ (Trailing UTCI Burden):</strong> Inclusive rolling mean of <code className="text-slate-800 font-semibold">max(0, U - 20)</code> over 24 and 72 chronological hourly records per grid. Zero future leakage.
             </li>
             <li>
-              <strong className="text-white font-mono">N (Nighttime Thermal Stress):</strong> Calibrated strictly on 22:00–06:00 IST nocturnal temperature percentiles (daytime N = 0). Captures lack of overnight physiological cooling.
+              <strong className="text-slate-900 font-mono">N (Nighttime Thermal Stress):</strong> Calibrated strictly on 22:00–06:00 IST nocturnal temperature percentiles (daytime N = 0). Captures lack of overnight physiological cooling.
             </li>
           </ul>
         </div>

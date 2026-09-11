@@ -98,7 +98,7 @@ export default function Home() {
     : [];
 
   const mainAppShell = (
-    <div className="min-h-screen bg-[#090D16] text-slate-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white relative">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-[#F47C20] selection:text-white relative">
       {/* Top Header Command Bar */}
       <Header
         activeScreenTitle={screenTitles[currentScreen]}
@@ -125,7 +125,7 @@ export default function Home() {
         />
 
         {/* Dynamic View Canvas with smooth transition: Optimized for GIS and high-density dashboard */}
-        <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-6 bg-[#090D16]/95 pb-24">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-6 bg-slate-50 pb-24">
           <div key={viewKey} className="animate-fadeIn">
             {currentScreen === 'dashboard' && (
               <HomeDashboardView
@@ -188,10 +188,10 @@ export default function Home() {
 
       {/* Global Cmd+K Search Modal */}
       {isSearchOpen && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-start justify-center pt-16 sm:pt-20 p-4 animate-in fade-in duration-150">
-          <div className="bg-[#0D1527] border border-slate-700/80 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-start justify-center pt-16 sm:pt-20 p-4 animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden">
             {/* Input row */}
-            <div className="p-3.5 border-b border-slate-800 flex items-center gap-3 bg-[#0B1120]">
+            <div className="p-3.5 border-b border-slate-200 flex items-center gap-3 bg-slate-50">
               <Search className="w-5 h-5 text-slate-400 shrink-0" />
               <input
                 type="text"
@@ -199,7 +199,7 @@ export default function Home() {
                 placeholder="Search by Ward Name, ID (1-200), or Zone..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none"
+                className="w-full bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
               />
               <button
                 type="button"
@@ -207,7 +207,7 @@ export default function Home() {
                   setIsSearchOpen(false);
                   setSearchQuery('');
                 }}
-                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -216,7 +216,7 @@ export default function Home() {
             {/* Results List */}
             <div className="max-h-80 overflow-y-auto p-2">
               {searchQuery.trim() === '' ? (
-                <div className="p-5 text-center text-xs text-slate-400 space-y-2">
+                <div className="p-5 text-center text-xs text-slate-500 space-y-2">
                   <p>Type a ward number (e.g. "114"), area ("Royapuram", "Adyar"), or zone.</p>
                   <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
                     {['Royapuram', 'Anna Nagar', 'Tondiarpet', '114', 'Adyar'].map((q) => (
@@ -224,7 +224,7 @@ export default function Home() {
                         key={q}
                         type="button"
                         onClick={() => setSearchQuery(q === '114' ? '114' : q)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] border border-slate-700 cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono text-[11px] border border-slate-200 cursor-pointer"
                       >
                         {q === '114' ? 'Ward 114' : q}
                       </button>
@@ -232,8 +232,8 @@ export default function Home() {
                   </div>
                 </div>
               ) : searchResults.length === 0 ? (
-                <div className="p-6 text-center text-xs text-slate-400">
-                  No wards found matching "<span className="text-white font-medium">{searchQuery}</span>".
+                <div className="p-6 text-center text-xs text-slate-500">
+                  No wards found matching "<span className="text-slate-900 font-medium">{searchQuery}</span>".
                 </div>
               ) : (
                 <div className="space-y-1">
@@ -242,17 +242,17 @@ export default function Home() {
                       key={w.ward_id}
                       type="button"
                       onClick={() => handleSelectWard(w.ward_id)}
-                      className="w-full p-2.5 rounded-xl hover:bg-slate-800/80 flex items-center justify-between transition-colors text-left group cursor-pointer"
+                      className="w-full p-2.5 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200 flex items-center justify-between transition-colors text-left group cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="font-mono text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+                        <span className="font-mono text-xs font-bold text-[#F47C20] bg-orange-50 px-2 py-0.5 rounded border border-orange-200">
                           W{w.ward_id}
                         </span>
                         <div>
-                          <div className="text-xs font-semibold text-white group-hover:text-blue-400 transition-colors">
+                          <div className="text-xs font-semibold text-slate-900 group-hover:text-[#F47C20] transition-colors">
                             {w.ward_name}
                           </div>
-                          <div className="text-[11px] text-slate-400">
+                          <div className="text-[11px] text-slate-500">
                             Zone {w.zone_id} • {w.zone_name} ({w.region})
                           </div>
                         </div>
@@ -260,7 +260,7 @@ export default function Home() {
 
                       <div className="flex items-center gap-3">
                         <RiskBadge level={w.risk_level} size="sm" />
-                        <span className="text-slate-500 group-hover:text-white transition-colors">
+                        <span className="text-slate-400 group-hover:text-slate-700 transition-colors">
                           <ArrowRight className="w-3.5 h-3.5" />
                         </span>
                       </div>
@@ -271,11 +271,11 @@ export default function Home() {
             </div>
 
             {/* Footer */}
-            <div className="p-3 bg-slate-950/80 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
+            <div className="p-3 bg-slate-50 border-t border-slate-200 text-[11px] text-slate-500 flex items-center justify-between">
               <span>
-                Press <kbd className="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-slate-400 border border-slate-700">ESC</kbd> to exit
+                Press <kbd className="px-1.5 py-0.5 rounded bg-white font-mono text-slate-600 border border-slate-200">ESC</kbd> to exit
               </span>
-              <span>200 GCC Wards Indexed</span>
+              <span className="font-medium text-slate-600">200 GCC Wards Indexed</span>
             </div>
           </div>
         </div>
@@ -284,18 +284,18 @@ export default function Home() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
+    <div className="min-h-screen bg-slate-100 flex flex-col">
       {/* Device Frame Wrapper if in mobile simulated mode */}
       {viewportMode === 'mobile' ? (
-        <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 bg-[#060911] overflow-y-auto">
-          <div className="mb-3 flex items-center gap-2 text-xs font-mono text-slate-400">
-            <Smartphone className="w-4 h-4 text-blue-400" />
+        <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 bg-slate-200 overflow-y-auto">
+          <div className="mb-3 flex items-center gap-2 text-xs font-mono text-slate-600">
+            <Smartphone className="w-4 h-4 text-[#F47C20]" />
             <span>Figma Prototype Mobile Viewport Simulation (iPhone 15 Pro • 390px)</span>
           </div>
           {/* Smartphone Bezel */}
-          <div className="w-full max-w-[390px] h-[844px] bg-[#090D16] rounded-[48px] border-[10px] border-slate-800 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col relative ring-1 ring-slate-700/50">
+          <div className="w-full max-w-[390px] h-[844px] bg-slate-50 rounded-[48px] border-[10px] border-slate-800 shadow-2xl overflow-hidden flex flex-col relative ring-1 ring-slate-300">
             {/* Dynamic Island / Notch */}
-            <div className="h-7 bg-[#090D16] flex items-center justify-center relative shrink-0 z-40">
+            <div className="h-7 bg-slate-900 flex items-center justify-center relative shrink-0 z-40">
               <div className="w-24 h-4 bg-black rounded-full" />
             </div>
             {/* Screen Content */}
@@ -305,8 +305,8 @@ export default function Home() {
           </div>
         </div>
       ) : viewportMode === 'desktop' ? (
-        <div className="flex-1 flex flex-col items-center bg-[#070b14] overflow-x-auto">
-          <div className="w-full max-w-[1560px] flex-1 shadow-2xl border-x border-slate-800 flex flex-col">
+        <div className="flex-1 flex flex-col items-center bg-slate-200 overflow-x-auto">
+          <div className="w-full max-w-[1560px] flex-1 shadow-xl border-x border-slate-300 flex flex-col">
             {mainAppShell}
           </div>
         </div>

@@ -2,48 +2,52 @@
 
 @layer base {
   :root {
-    --background: #090d16;
-    --foreground: #f8fafc;
-    --card: #0f172a;
-    --card-foreground: #f8fafc;
-    --border: #1e293b;
-    --sidebar: #0b1120;
-    --sidebar-foreground: #94a3b8;
-    --sidebar-active: #1e293b;
-    --sidebar-border: #1e293b;
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --border: #e2e8f0;
+    --sidebar: #ffffff;
+    --sidebar-foreground: #64748b;
+    --sidebar-active: #fff7ed;
+    --sidebar-border: #e2e8f0;
   }
 }
 
 /* Severity Risk Level Color Variables */
 :root {
-  --risk-normal: #10b981;
-  --risk-normal-bg: rgba(16, 185, 129, 0.12);
-  --risk-normal-border: #059669;
+  --brand-orange: #F47C20;
+  --brand-orange-hover: #e06910;
+  --brand-orange-light: #fff7ed;
 
-  --risk-moderate: #f59e0b;
-  --risk-moderate-bg: rgba(245, 158, 11, 0.12);
-  --risk-moderate-border: #d97706;
+  --risk-normal: #059669;
+  --risk-normal-bg: #ecfdf5;
+  --risk-normal-border: #a7f3d0;
 
-  --risk-high: #f97316;
-  --risk-high-bg: rgba(249, 115, 22, 0.12);
-  --risk-high-border: #ea580c;
+  --risk-moderate: #d97706;
+  --risk-moderate-bg: #fffbeb;
+  --risk-moderate-border: #fde68a;
 
-  --risk-very-high: #ef4444;
-  --risk-very-high-bg: rgba(239, 68, 68, 0.12);
-  --risk-very-high-border: #dc2626;
+  --risk-high: #ea580c;
+  --risk-high-bg: #fff7ed;
+  --risk-high-border: #ffedd5;
+
+  --risk-very-high: #dc2626;
+  --risk-very-high-bg: #fef2f2;
+  --risk-very-high-border: #fecaca;
 
   --risk-extreme: #7c3aed;
-  --risk-extreme-bg: rgba(124, 58, 237, 0.15);
-  --risk-extreme-border: #6d28d9;
+  --risk-extreme-bg: #f5f3ff;
+  --risk-extreme-border: #ddd6fe;
 
   /* Metric Accent Colors */
-  --accent-utci: #ef4444;
-  --accent-wbgt: #f97316;
-  --accent-htsi: #f59e0b;
-  --accent-hi: #eab308;
-  --accent-hum: #06b6d4;
-  --accent-wind: #3b82f6;
-  --accent-solar: #ec4899;
+  --accent-utci: #dc2626;
+  --accent-wbgt: #ea580c;
+  --accent-htsi: #d97706;
+  --accent-hi: #ca8a04;
+  --accent-hum: #0891b2;
+  --accent-wind: #2563eb;
+  --accent-solar: #db2777;
 }
 
 html {

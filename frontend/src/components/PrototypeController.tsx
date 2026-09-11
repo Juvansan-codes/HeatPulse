@@ -111,9 +111,9 @@ export const PrototypeController: React.FC<PrototypeControllerProps> = ({
         <button
           type="button"
           onClick={() => setIsCollapsed(false)}
-          className="flex items-center gap-2 px-3 py-2 rounded-full bg-slate-900/90 border border-blue-500/40 text-xs font-semibold text-blue-400 shadow-xl backdrop-blur hover:bg-blue-600/20 hover:text-white transition-all cursor-pointer"
+          className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-white border border-slate-200 text-xs font-semibold text-[#F47C20] shadow-lg backdrop-blur hover:bg-orange-50 transition-all cursor-pointer"
         >
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
           <span>Prototype Tour Controls</span>
         </button>
       </div>
@@ -122,13 +122,13 @@ export const PrototypeController: React.FC<PrototypeControllerProps> = ({
 
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 max-w-4xl w-[94%] pointer-events-auto animate-in slide-in-from-bottom-3 duration-200">
-      <div className="bg-[#0B1120]/95 backdrop-blur-md border border-slate-700/80 rounded-2xl shadow-2xl p-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl shadow-xl p-3 flex flex-wrap items-center justify-between gap-3">
         {/* Left: Prototype Flow Controller */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/30 text-xs font-semibold text-blue-400">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-50 border border-orange-200 text-xs font-semibold text-[#F47C20]">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             <span className="hidden sm:inline">Prototype Flow:</span>
-            <span className="text-white">
+            <span className="text-slate-900">
               {currentFlowIndex >= 0 ? prototypeFlows[currentFlowIndex].title : 'Custom'}
             </span>
           </div>
@@ -137,7 +137,7 @@ export const PrototypeController: React.FC<PrototypeControllerProps> = ({
             <button
               type="button"
               onClick={handlePrevFlow}
-              className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
               title="Previous Screen Flow"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -145,7 +145,7 @@ export const PrototypeController: React.FC<PrototypeControllerProps> = ({
             <button
               type="button"
               onClick={handleNextFlow}
-              className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
               title="Next Screen Flow"
             >
               <ChevronRight className="w-4 h-4" />
@@ -154,14 +154,14 @@ export const PrototypeController: React.FC<PrototypeControllerProps> = ({
         </div>
 
         {/* Center: Device Viewport Switcher */}
-        <div className="flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
           <button
             type="button"
             onClick={() => onChangeViewportMode('responsive')}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
               viewportMode === 'responsive'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-[#F47C20] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
             title="Fluid Responsive Mode"
           >
@@ -174,8 +174,8 @@ export const PrototypeController: React.FC<PrototypeControllerProps> = ({
             onClick={() => onChangeViewportMode('desktop')}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
               viewportMode === 'desktop'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-[#F47C20] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
             title="Simulate Large Desktop GIS Workspace (1440px)"
           >
@@ -188,8 +188,8 @@ export const PrototypeController: React.FC<PrototypeControllerProps> = ({
             onClick={() => onChangeViewportMode('mobile')}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
               viewportMode === 'mobile'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-[#F47C20] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
             title="Simulate Mobile Device Frame (390px iPhone)"
           >
@@ -205,8 +205,8 @@ export const PrototypeController: React.FC<PrototypeControllerProps> = ({
             onClick={onToggleHotspots}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
               showHotspots
-                ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                ? 'bg-amber-50 border-amber-200 text-amber-800 font-semibold'
+                : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900'
             }`}
             title="Highlight Clickable Figma Prototype Hotspots"
           >
@@ -217,7 +217,7 @@ export const PrototypeController: React.FC<PrototypeControllerProps> = ({
           <button
             type="button"
             onClick={() => setIsCollapsed(true)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors cursor-pointer"
             title="Minimize Prototype Toolbar"
           >
             <Minimize2 className="w-4 h-4" />
