@@ -103,3 +103,52 @@ class HorizonResponse(BaseModel):
     number_of_grids: int
     number_of_wards: int
     horizon_length_hours: int
+
+# Explainability
+class ExplanationRisk(BaseModel):
+    human_heat_risk: Optional[float]
+    heat_hazard: Optional[float]
+
+class ExplanationHeatHazard(BaseModel):
+    htsi: Optional[float]
+    htsi_level: Optional[int]
+    htsi_label: Optional[str]
+    utci: Optional[float]
+    wbgt: Optional[float]
+    heat_index: Optional[float]
+    tmrt: Optional[float]
+    burden_24h: Optional[float]
+    burden_72h: Optional[float]
+    extreme_utci_flag: Optional[bool]
+
+class ExplanationExposure(BaseModel):
+    population: Optional[float]
+    population_density: Optional[float]
+    population_density_city_percentile: Optional[float]
+
+class ExplanationVulnerability(BaseModel):
+    vulnerability: Optional[float]
+    vulnerability_city_percentile: Optional[float]
+    healthcare_facility_count: Optional[int]
+    healthcare_facilities_per_10000: Optional[float]
+    healthcare_availability_city_percentile: Optional[float]
+
+class ExplanationDriver(BaseModel):
+    category: str
+    label: str
+    value: Optional[float] = None
+    unit: Optional[str] = None
+    description: str
+
+class ExplanationResponse(BaseModel):
+    ward_id: int
+    ward_name: Optional[str] = None
+    initialization_time: Optional[datetime] = None
+    valid_time: Optional[datetime] = None
+    lead_hours: Optional[int] = None
+    risk: ExplanationRisk
+    heat_hazard: ExplanationHeatHazard
+    exposure: ExplanationExposure
+    vulnerability: ExplanationVulnerability
+    drivers: List[ExplanationDriver]
+    summary: str

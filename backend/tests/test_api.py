@@ -87,3 +87,38 @@ def test_alerts():
     assert "alerts" in data
     assert "count" in data
     assert data["count"] == 0 # we know it's currently 0 for this window
+
+@pytest.mark.skipif(not has_db, reason="Live DB credentials required")
+def test_ward_explanation():
+    # 1. Valid ward + valid lead_day
+    response = client.get("/api/v1/wards/1/explanation?lead_day=1")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["ward_id"] == 1
+    assert "summary" in data
+    assert "drivers" in data
+    assert "heat_hazard" in data
+    assert "exposure" in data
+    assert "vulnerability" in data
+    
+    # Check percentile boundaries
+    vul_pct = data["vulnerability"].get("vulnerability_city_percentile")
+    if vul_pct is not None:
+        assert 0 <= vul_pct <= 100
+        
+    # Check deterministic labels
+    drivers = data["drivers"]
+    for d in drivers:
+        assert d["category"] in ["heat_hazard", "exposure", "vulnerability"]
+        assert "importance" not in d  # constraint check
+        if d["label"] == "High HTSI level":
+            assert "HTSI level of" in d["description"]
+            assert data["heat_hazard"]["htsi_level"] >= 3
+            
+    # 2. Invalid horizon (e.g. no lead_day or valid_time provided)
+    res_invalid = client.get("/api/v1/wards/1/explanation")
+    assert res_invalid.status_code == 400
+    
+    # 3. Nonexistent ward
+    res_404 = client.get("/api/v1/wards/999999/explanation?lead_day=1")
+    assert res_404.status_code == 404

@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Path
-from app.services.api_service import get_all_wards, get_ward_detail, get_ward_forecast
-from app.models.schemas import WardCollection, WardDetailResponse, WardForecastResponse
+from app.services.api_service import get_all_wards, get_ward_detail, get_ward_forecast, get_explanation
+from app.models.schemas import WardCollection, WardDetailResponse, WardForecastResponse, ExplanationResponse
+from typing import Optional
+from datetime import datetime
 
 router = APIRouter()
 
@@ -24,3 +26,14 @@ def ward_forecast(ward_id: int = Path(..., description="The integer ID of the wa
     Returns the complete 5-horizon forecast for the requested ward.
     """
     return get_ward_forecast(ward_id)
+
+@router.get("/wards/{ward_id}/explanation", response_model=ExplanationResponse)
+def ward_explanation(
+    ward_id: int = Path(..., description="The integer ID of the ward"),
+    lead_day: Optional[int] = None,
+    valid_time: Optional[datetime] = None
+):
+    """
+    Returns a structured, deterministic explanation of the operational heat-impact risk for a given ward and forecast horizon.
+    """
+    return get_explanation(ward_id, lead_day, valid_time)

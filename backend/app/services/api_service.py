@@ -6,7 +6,7 @@ from app.models.schemas import (
 )
 from fastapi import HTTPException
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 def get_health() -> HealthResponse:
     supabase = get_supabase_client()
@@ -316,4 +316,180 @@ def get_horizon() -> HorizonResponse:
         number_of_grids=grids_count,
         number_of_wards=ward_count,
         horizon_length_hours=max_lead
+    )
+
+from app.models.schemas import (
+    ExplanationResponse, ExplanationRisk, ExplanationHeatHazard,
+    ExplanationExposure, ExplanationVulnerability, ExplanationDriver
+)
+
+def _calc_percentile(target_val: Optional[float], all_vals: List[Optional[float]]) -> Optional[float]:
+    if target_val is None:
+        return None
+    valid_vals = [v for v in all_vals if v is not None]
+    if not valid_vals:
+        return None
+    
+    # Simple percentile rank: (number of values <= target_val) / total * 100
+    count_less_equal = sum(1 for v in valid_vals if v <= target_val)
+    return (count_less_equal / len(valid_vals)) * 100.0
+
+def get_explanation(ward_id: int, lead_day: Optional[int], valid_time: Optional[datetime]) -> ExplanationResponse:
+    if lead_day is None and valid_time is None:
+        raise HTTPException(status_code=400, detail="Must provide at least one filter: lead_day or valid_time")
+        
+    supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database client unavailable")
+        
+    # Check if ward exists
+    ward_res = supabase.table("wards").select("ward_id, ward_name").eq("ward_id", ward_id).execute()
+    if not ward_res.data:
+        raise HTTPException(status_code=404, detail=f"Ward {ward_id} not found")
+    ward_name = ward_res.data[0].get("ward_name")
+        
+    # Fetch risk record for this ward and time
+    risk_q = supabase.table("ward_forecast_risk").select("*").eq("ward_id", ward_id)
+    if valid_time:
+        risk_q = risk_q.eq("valid_time", valid_time.isoformat())
+    # If only lead_day is provided, we must join or rely on the grid to filter
+    risk_res = risk_q.execute()
+    
+    if not risk_res.data:
+        raise HTTPException(status_code=404, detail="No forecast record found for this horizon")
+        
+    # If multiple returned (e.g. lead_day not fully specifying if multiple valid times exist for that day, though unlikely given the schema), pick the first
+    # However, ward_forecast_risk doesn't have lead_day. We need to get the grid.
+    target_risk = None
+    target_grid = None
+    
+    for r in risk_res.data:
+        gid = r.get("assigned_grid_id")
+        vt = r.get("valid_time")
+        
+        # Fetch the grid
+        grid_q = supabase.table("forecast_grids").select("*").eq("grid_id", gid).eq("valid_time", vt)
+        if lead_day is not None:
+            grid_q = grid_q.eq("lead_day", lead_day)
+            
+        g_res = grid_q.execute()
+        if g_res.data:
+            target_risk = r
+            target_grid = g_res.data[0]
+            break
+            
+    if not target_risk or not target_grid:
+        raise HTTPException(status_code=404, detail="No matching grid forecast record found for this horizon")
+
+    # Fetch ALL exposure and vulnerability to compute percentiles
+    all_exp_res = supabase.table("ward_exposure").select("ward_id, population, population_density").execute()
+    all_vul_res = supabase.table("ward_vulnerability").select("ward_id, vulnerability, healthcare_facility_count, healthcare_facilities_per_10000_derived_population").execute()
+    
+    all_pop_den = [e.get("population_density") for e in all_exp_res.data]
+    all_vul = [v.get("vulnerability") for v in all_vul_res.data]
+    all_hc = [v.get("healthcare_facilities_per_10000_derived_population") for v in all_vul_res.data]
+    
+    # Target ward data
+    target_exp = next((e for e in all_exp_res.data if e.get("ward_id") == ward_id), {})
+    target_vul = next((v for v in all_vul_res.data if v.get("ward_id") == ward_id), {})
+    
+    pop_den = target_exp.get("population_density")
+    vul = target_vul.get("vulnerability")
+    hc = target_vul.get("healthcare_facilities_per_10000_derived_population")
+    
+    pop_pct = _calc_percentile(pop_den, all_pop_den)
+    vul_pct = _calc_percentile(vul, all_vul)
+    hc_pct = _calc_percentile(hc, all_hc)
+    
+    drivers = []
+    
+    # 1. Heat Hazard Drivers
+    htsi_lvl = target_risk.get("htsi_level")
+    htsi_lbl = target_grid.get("htsi_label")
+    if htsi_lvl is not None and htsi_lvl >= 3:
+        lbl_str = htsi_lbl if htsi_lbl else str(htsi_lvl)
+        drivers.append(ExplanationDriver(
+            category="heat_hazard",
+            label="High HTSI level",
+            value=target_grid.get("htsi"),
+            unit="score",
+            description=f"The ward has a project-specific operational HTSI level of {lbl_str}."
+        ))
+        
+    if target_risk.get("extreme_utci_flag"):
+        drivers.append(ExplanationDriver(
+            category="heat_hazard",
+            label="Extreme UTCI",
+            value=target_grid.get("utci"),
+            unit="°C",
+            description="Extreme UTCI flag is true."
+        ))
+        
+    # 2. Exposure Drivers
+    if pop_pct is not None and pop_pct >= 80:
+        drivers.append(ExplanationDriver(
+            category="exposure",
+            label="High relative population density",
+            value=round(pop_pct, 1),
+            unit="percentile",
+            description=f"Population density is in the {int(round(pop_pct))}th percentile among current GCC wards."
+        ))
+        
+    # 3. Vulnerability Drivers
+    if vul_pct is not None and vul_pct >= 80:
+        drivers.append(ExplanationDriver(
+            category="vulnerability",
+            label="High relative vulnerability",
+            value=round(vul_pct, 1),
+            unit="percentile",
+            description=f"Vulnerability is in the {int(round(vul_pct))}th percentile among current GCC wards."
+        ))
+        
+    if hc_pct is not None and hc_pct <= 20:
+        drivers.append(ExplanationDriver(
+            category="vulnerability",
+            label="Limited healthcare availability",
+            value=round(hc_pct, 1),
+            unit="percentile",
+            description=f"Healthcare availability is in the {int(round(hc_pct))}th percentile among current GCC wards."
+        ))
+
+    summary = "This ward's operational heat-impact risk reflects the combination of thermal hazard, population exposure, and vulnerability."
+    
+    return ExplanationResponse(
+        ward_id=ward_id,
+        ward_name=ward_name,
+        initialization_time=target_risk.get("initialization_time"),
+        valid_time=target_risk.get("valid_time"),
+        lead_hours=target_grid.get("lead_hours"),
+        risk=ExplanationRisk(
+            human_heat_risk=target_risk.get("human_heat_risk"),
+            heat_hazard=target_risk.get("heat_hazard")
+        ),
+        heat_hazard=ExplanationHeatHazard(
+            htsi=target_grid.get("htsi"),
+            htsi_level=target_risk.get("htsi_level"),
+            htsi_label=target_grid.get("htsi_label"),
+            utci=target_grid.get("utci"),
+            wbgt=target_grid.get("wbgt_outdoor"),
+            heat_index=target_grid.get("heat_index"),
+            tmrt=target_grid.get("mean_radiant_temp"),
+            burden_24h=target_grid.get("burden_24h"),
+            burden_72h=target_grid.get("burden_72h"),
+            extreme_utci_flag=target_risk.get("extreme_utci_flag")
+        ),
+        exposure=ExplanationExposure(
+            population=target_exp.get("population"),
+            population_density=pop_den,
+            population_density_city_percentile=round(pop_pct, 1) if pop_pct is not None else None
+        ),
+        vulnerability=ExplanationVulnerability(
+            vulnerability=vul,
+            vulnerability_city_percentile=round(vul_pct, 1) if vul_pct is not None else None,
+            healthcare_facility_count=target_vul.get("healthcare_facility_count"),
+            healthcare_facilities_per_10000=hc,
+            healthcare_availability_city_percentile=round(hc_pct, 1) if hc_pct is not None else None
+        ),
+        drivers=drivers,
+        summary=summary
     )
