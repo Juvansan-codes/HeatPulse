@@ -75,6 +75,7 @@ export interface ForecastDay {
   nighttime_stress_flag: boolean;
   ml_lead_mae_temp: number; // e.g. 0.85 at D1, 0.95 at D5
   ml_lead_mae_htsi: number; // e.g. 3.02 at D1, 3.45 at D5
+  human_heat_risk: number; // City-wide composite risk 0–1
 }
 
 export interface AlertProtocol {

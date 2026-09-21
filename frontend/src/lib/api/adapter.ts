@@ -144,6 +144,7 @@ export function transformBackendForecastToForecastDay(f: BackendForecastSchema):
     max_utci: f.max_utci,
     max_wbgt: f.max_wbgt,
     max_htsi: f.max_htsi,
+    human_heat_risk: Number((f.max_htsi / 100 * 0.55).toFixed(3)),
     risk_level: mapBackendAlertLevelToSeverity(f.alert_level),
     nighttime_stress_flag: f.nighttime_stress_flag,
     ml_lead_mae_temp: f.ml_lead_mae_temp,
