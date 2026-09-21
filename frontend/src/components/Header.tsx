@@ -93,6 +93,9 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-orange-50 text-[#F47C20] border border-orange-200 hidden xs:inline-block">
                 GCC CHENNAI
               </span>
+              <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 hidden sm:inline-block">
+                SIH 2026
+              </span>
             </div>
             <p className="text-[10px] text-slate-500 tracking-wide hidden sm:block">
               Extreme Heat Early Warning Platform

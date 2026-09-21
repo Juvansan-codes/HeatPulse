@@ -1,5 +1,6 @@
 import React from 'react';
 import { SeverityLevel } from '../lib/types';
+import { RISK_TOKENS } from '../lib/design-tokens';
 
 interface RiskBadgeProps {
   level: SeverityLevel;
@@ -16,40 +17,7 @@ export const RiskBadge: React.FC<RiskBadgeProps> = ({
   pulseExtreme = true,
   className = ''
 }) => {
-  const styles: Record<SeverityLevel, { bg: string; text: string; border: string; dot: string }> = {
-    Normal: {
-      bg: 'bg-emerald-50',
-      text: 'text-emerald-700',
-      border: 'border-emerald-200',
-      dot: 'bg-emerald-500'
-    },
-    Moderate: {
-      bg: 'bg-amber-50',
-      text: 'text-amber-700',
-      border: 'border-amber-200',
-      dot: 'bg-amber-500'
-    },
-    High: {
-      bg: 'bg-orange-50',
-      text: 'text-orange-700',
-      border: 'border-orange-200',
-      dot: 'bg-orange-500'
-    },
-    'Very High': {
-      bg: 'bg-red-50',
-      text: 'text-red-700',
-      border: 'border-red-200',
-      dot: 'bg-red-500'
-    },
-    Extreme: {
-      bg: 'bg-purple-50',
-      text: 'text-purple-700',
-      border: 'border-purple-200',
-      dot: 'bg-purple-500'
-    }
-  };
-
-  const current = styles[level] || styles.Normal;
+  const token = RISK_TOKENS[level] || RISK_TOKENS.Normal;
 
   const sizeClasses = {
     sm: 'text-[11px] px-2 py-0.5 gap-1.5',
@@ -67,18 +35,20 @@ export const RiskBadge: React.FC<RiskBadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center font-medium border rounded-full uppercase tracking-wider ${sizeClasses} ${current.bg} ${current.text} ${current.border} ${
+      className={`inline-flex items-center font-bold border rounded-full uppercase tracking-wider ${sizeClasses} ${token.bgClass} ${token.textClass} ${token.borderClass} ${
         isExtreme && pulseExtreme ? 'pulse-extreme' : ''
       } ${className}`}
     >
       {showDot && (
         <span
-          className={`rounded-full shrink-0 ${dotSizes} ${current.dot} ${
+          className={`rounded-full shrink-0 ${dotSizes} ${
             isExtreme ? 'animate-pulse' : ''
           }`}
+          style={{ backgroundColor: token.dotColor }}
         />
       )}
-      <span>{level}</span>
+      <span>{token.label}</span>
     </span>
   );
 };
+

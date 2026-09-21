@@ -5,14 +5,17 @@ import { RiskBadge } from '../components/RiskBadge';
 import { MapLegend } from '../components/MapLegend';
 import {
   Navigation,
-  ExternalLink
+  ExternalLink,
+  Sparkles
 } from 'lucide-react';
 
 interface HeatMapViewProps {
   onSelectWard: (wardId: number) => void;
+  onOpenExplainability?: (wardId: number) => void;
 }
 
-export const HeatMapView: React.FC<HeatMapViewProps> = ({ onSelectWard }) => {
+export const HeatMapView: React.FC<HeatMapViewProps> = ({ onSelectWard, onOpenExplainability }) => {
+
   const [selectedLayer, setSelectedLayer] = useState<
     'risk' | 'htsi' | 'utci' | 'wbgt' | 'exposure' | 'healthcare'
   >('risk');
@@ -383,7 +386,18 @@ export const HeatMapView: React.FC<HeatMapViewProps> = ({ onSelectWard }) => {
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-200">
+          <div className="pt-4 border-t border-slate-200 space-y-2">
+            {onOpenExplainability && (
+              <button
+                type="button"
+                onClick={() => onOpenExplainability(activeWard.ward_id)}
+                className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-amber-400 font-semibold text-xs rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs border border-slate-700 hover:border-amber-400/50 group"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform" />
+                <span>Why is Ward {activeWard.ward_id} at {activeWard.risk_level.toUpperCase()} Risk?</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => onSelectWard(activeWard.ward_id)}
@@ -398,3 +412,4 @@ export const HeatMapView: React.FC<HeatMapViewProps> = ({ onSelectWard }) => {
     </div>
   );
 };
+

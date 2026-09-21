@@ -6,6 +6,7 @@ import { Sidebar, ScreenId } from '../components/Sidebar';
 import { MobileNavDrawer } from '../components/MobileNavDrawer';
 import { SettingsModal, SettingsConfig } from '../components/SettingsModal';
 import { UserProfileModal } from '../components/UserProfileModal';
+import { WardExplainabilityPanel } from '../components/WardExplainabilityPanel';
 import { PrototypeController, ViewportMode } from '../components/PrototypeController';
 import { HomeDashboardView } from '../views/HomeDashboardView';
 import { HeatMapView } from '../views/HeatMapView';
@@ -13,16 +14,34 @@ import { ForecastView } from '../views/ForecastView';
 import { WardDetailsView } from '../views/WardDetailsView';
 import { AlertsView } from '../views/AlertsView';
 import { MethodologyView } from '../views/MethodologyView';
+import { MobileBottomNav } from '../components/MobileBottomNav';
+import { MobileHomeView } from '../views/MobileHomeView';
+import { MobileMapView } from '../views/MobileMapView';
+import { MobileWardView } from '../views/MobileWardView';
+import { MobileForecastView } from '../views/MobileForecastView';
+import { MobileAlertsView } from '../views/MobileAlertsView';
 import { WARDS_DATA } from '../lib/data';
 import { Search, X, ArrowRight, Smartphone } from 'lucide-react';
 import { RiskBadge } from '../components/RiskBadge';
+import { useHeatPulseStore } from '../store/heatpulse-store';
+import { StaleBadge } from '../components/ui/StaleBadge';
 
 export default function Home() {
   const [currentScreen, setCurrentScreen] = useState<ScreenId>('dashboard');
-  const [selectedWardId, setSelectedWardId] = useState<number>(114);
+  
+  // Zustand Client Store Slices
+  const selectedWardId = useHeatPulseStore((s) => s.selectedWardId);
+  const setSelectedWardId = useHeatPulseStore((s) => s.setSelectedWardId);
+  const explainWardId = useHeatPulseStore((s) => s.explainWardId);
+  const isExplainOpen = useHeatPulseStore((s) => s.isExplainOpen);
+  const setExplainOpen = useHeatPulseStore((s) => s.setExplainOpen);
+  const searchQuery = useHeatPulseStore((s) => s.searchQuery);
+  const setSearchQuery = useHeatPulseStore((s) => s.setSearchQuery);
+  const isSearchOpen = useHeatPulseStore((s) => s.isSearchModalOpen);
+  const setIsSearchOpen = useHeatPulseStore((s) => s.setSearchModalOpen);
+  const staleTimestamp = useHeatPulseStore((s) => s.staleTimestamp);
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
-  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
-  const [searchQuery, setSearchQuery] = useState<string>('');
   const [userRole, setUserRole] = useState<string>('GCC Disaster Authority');
   const [language, setLanguage] = useState<'en' | 'ta'>('en');
   const [viewKey, setViewKey] = useState<number>(0);
@@ -45,23 +64,34 @@ export default function Home() {
     highContrastMode: false
   });
 
-  // Keyboard shortcut for Cmd+K / Ctrl+K search
+  // Open explainability drawer callback
+  const handleOpenExplainability = useCallback((wardId?: number) => {
+    if (wardId) {
+      setSelectedWardId(wardId);
+    }
+    setExplainOpen(true, wardId ?? selectedWardId);
+  }, [selectedWardId, setSelectedWardId, setExplainOpen]);
+
+
+  // Keyboard shortcut for Cmd+K / Ctrl+K search & ESC to close explainability
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        setIsSearchOpen((prev) => !prev);
+        setIsSearchOpen(!isSearchOpen);
       }
       if (e.key === 'Escape') {
         setIsSearchOpen(false);
         setIsSettingsOpen(false);
         setIsProfileOpen(false);
         setIsMobileNavOpen(false);
+        setExplainOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isSearchOpen, setIsSearchOpen, setExplainOpen]);
+
 
   const screenTitles: Record<ScreenId, string> = {
     dashboard: 'Executive Command Dashboard',
@@ -133,11 +163,15 @@ export default function Home() {
                 onNavigateToMap={() => handleNavigate('map')}
                 onNavigateToForecast={() => handleNavigate('forecast')}
                 onNavigateToAlerts={() => handleNavigate('alerts')}
+                onOpenExplainability={handleOpenExplainability}
               />
             )}
 
             {currentScreen === 'map' && (
-              <HeatMapView onSelectWard={handleSelectWard} />
+              <HeatMapView
+                onSelectWard={handleSelectWard}
+                onOpenExplainability={handleOpenExplainability}
+              />
             )}
 
             {currentScreen === 'forecast' && <ForecastView />}
@@ -146,12 +180,16 @@ export default function Home() {
               <WardDetailsView
                 selectedWardId={selectedWardId}
                 onSelectWard={(id) => setSelectedWardId(id)}
+                onOpenExplainability={handleOpenExplainability}
               />
             )}
 
             {currentScreen === 'alerts' && <AlertsView />}
 
-            {currentScreen === 'methodology' && <MethodologyView />}
+            {currentScreen === 'methodology' && (
+              <MethodologyView onOpenExplainability={handleOpenExplainability} />
+            )}
+
           </div>
         </main>
       </div>
@@ -185,6 +223,15 @@ export default function Home() {
         selectedRole={userRole}
         onChangeRole={setUserRole}
       />
+
+      {/* Phase F7 — Explainability "Why This Ward?" Slide-over Panel */}
+      <WardExplainabilityPanel
+        wardId={explainWardId ?? selectedWardId}
+        isOpen={isExplainOpen}
+        onClose={() => setExplainOpen(false)}
+        onSelectWard={(id) => handleSelectWard(id)}
+      />
+
 
       {/* Global Cmd+K Search Modal */}
       {isSearchOpen && (
@@ -283,6 +330,99 @@ export default function Home() {
     </div>
   );
 
+  const mobileAppShell = (
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans relative pb-16 selection:bg-[#F47C20] selection:text-white">
+      <main className="flex-1 p-3 bg-slate-50 overflow-y-auto">
+        <div key={viewKey} className="animate-fadeIn">
+          {currentScreen === 'dashboard' && (
+            <MobileHomeView
+              onNavigateToMap={() => handleNavigate('map')}
+              onNavigateToForecast={() => handleNavigate('forecast')}
+              onNavigateToAlerts={() => handleNavigate('alerts')}
+              onSelectWard={handleSelectWard}
+              onOpenExplainability={handleOpenExplainability}
+            />
+          )}
+
+          {currentScreen === 'map' && (
+            <MobileMapView
+              onSelectWardDetails={handleSelectWard}
+              onOpenExplainability={handleOpenExplainability}
+            />
+          )}
+
+          {currentScreen === 'forecast' && <MobileForecastView />}
+
+          {currentScreen === 'ward-details' && (
+            <MobileWardView
+              selectedWardId={selectedWardId}
+              onSelectWard={(id) => setSelectedWardId(id)}
+              onOpenExplainability={handleOpenExplainability}
+            />
+          )}
+
+          {currentScreen === 'alerts' && (
+            <MobileAlertsView
+              onSelectWardDetails={handleSelectWard}
+              onOpenExplainability={handleOpenExplainability}
+            />
+          )}
+
+          {currentScreen === 'methodology' && (
+            <MethodologyView onOpenExplainability={handleOpenExplainability} />
+          )}
+        </div>
+      </main>
+
+      {/* Phase F7 Explainability Drawer */}
+      <WardExplainabilityPanel
+        wardId={explainWardId ?? selectedWardId}
+        isOpen={isExplainOpen}
+        onClose={() => setExplainOpen(false)}
+        onSelectWard={(id) => handleSelectWard(id)}
+      />
+
+
+      {/* Mobile Navigation Drawer (For More / Settings / Profile) */}
+      <MobileNavDrawer
+        isOpen={isMobileNavOpen}
+        onClose={() => setIsMobileNavOpen(false)}
+        currentScreen={currentScreen}
+        onNavigate={(screen) => handleNavigate(screen)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenProfile={() => setIsProfileOpen(true)}
+        onOpenSearch={() => setIsSearchOpen(true)}
+        language={language}
+        onToggleLanguage={() => setLanguage((prev) => (prev === 'en' ? 'ta' : 'en'))}
+        userRole={userRole}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        config={settingsConfig}
+        onSaveConfig={(newConfig) => setSettingsConfig(newConfig)}
+      />
+
+      {/* Profile Modal */}
+      <UserProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        selectedRole={userRole}
+        onChangeRole={setUserRole}
+      />
+
+      {/* Mobile Bottom Navigation Bar */}
+      <MobileBottomNav
+        currentScreen={currentScreen}
+        onNavigate={handleNavigate}
+        onOpenMore={() => setIsMobileNavOpen(true)}
+        isMoreOpen={isMobileNavOpen}
+      />
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
       {/* Device Frame Wrapper if in mobile simulated mode */}
@@ -300,7 +440,7 @@ export default function Home() {
             </div>
             {/* Screen Content */}
             <div className="flex-1 overflow-y-auto flex flex-col">
-              {mainAppShell}
+              {mobileAppShell}
             </div>
           </div>
         </div>
@@ -311,7 +451,10 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        mainAppShell
+        <>
+          <div className="hidden lg:block">{mainAppShell}</div>
+          <div className="block lg:hidden">{mobileAppShell}</div>
+        </>
       )}
 
       {/* Floating Clickable Prototype Controller & Tour Bar */}
@@ -328,3 +471,4 @@ export default function Home() {
     </div>
   );
 }
+

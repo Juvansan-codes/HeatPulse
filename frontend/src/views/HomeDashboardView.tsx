@@ -22,7 +22,9 @@ import {
   Activity,
   ShieldAlert,
   Zap,
-  Wind
+  Wind,
+  Sparkles,
+  Users
 } from 'lucide-react';
 
 interface HomeDashboardViewProps {
@@ -30,6 +32,7 @@ interface HomeDashboardViewProps {
   onNavigateToMap?: () => void;
   onNavigateToForecast?: () => void;
   onNavigateToAlerts?: () => void;
+  onOpenExplainability?: (wardId: number) => void;
 }
 
 /* ────────────────────────────────────────────────────────────────────────
@@ -49,8 +52,10 @@ const SEVERITY_COLORS: Record<SeverityLevel, { bg: string; text: string; border:
    ──────────────────────────────────────────────────────────────────────── */
 export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
   onSelectWard,
-  onNavigateToMap
+  onNavigateToMap,
+  onOpenExplainability
 }) => {
+
   // ─── Map toggle state ──────────────────────────────────────────────
   const [mapMode, setMapMode] = useState<'htsi' | 'risk'>('risk');
   const [hoveredWard, setHoveredWard] = useState<WardRecord | null>(null);
@@ -91,6 +96,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
     const highPlusWards = WARDS_DATA.filter(w =>
       w.risk_level === 'High' || w.risk_level === 'Very High' || w.risk_level === 'Extreme'
     );
+    const totalExposedPopulation = highPlusWards.reduce((sum, w) => sum + w.population, 0);
 
     return {
       cityRiskLevel,
@@ -98,6 +104,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
       highestRiskWard,
       extremeUtciWards,
       highPlusCount: highPlusWards.length,
+      totalExposedPopulation,
       sorted,
     };
   }, []);
@@ -123,6 +130,18 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
      ═══════════════════════════════════════════════════════════════════ */
   return (
     <div className="space-y-6">
+
+      {/* Demo Disclaimer Bar */}
+      <div className="bg-slate-900 text-slate-200 px-4 py-2 rounded-xl text-[11px] font-mono flex flex-col sm:flex-row items-center justify-between gap-2 border border-slate-800 shadow-2xs">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+          <span className="font-semibold text-amber-400">PROTOTYPE DEMO MODE</span>
+          <span className="text-slate-400">| SIH 2026 Evaluation</span>
+        </div>
+        <div className="text-slate-400 text-[10px] text-center sm:text-right">
+          Operational Heat Risk Early-Warning Intelligence • Not an official government warning system
+        </div>
+      </div>
 
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 1 — Executive Header Banner
@@ -171,6 +190,10 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
                 <Clock className="w-3.5 h-3.5 text-[#F47C20]" />
                 <span>{istTime}</span>
               </div>
+              <span className="text-[11px] font-semibold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded flex items-center gap-1">
+                <TrendingUp className="w-3 h-3 text-red-600" />
+                Risk Escalating (Days 1–2)
+              </span>
             </div>
 
             <p className="text-xs text-slate-600 max-w-xl leading-relaxed">
@@ -181,7 +204,10 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
           {/* Right — quick stats */}
           <div className="flex flex-col items-end gap-2.5 shrink-0">
             <div className="text-right">
-              <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">Peak Thermal Strain</div>
+              <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-1 justify-end" title="Universal Thermal Climate Index (°C)">
+                <span>Peak Thermal Strain</span>
+                <Info className="w-3 h-3 text-slate-400" />
+              </div>
               <div className="text-2xl font-bold font-mono tabular-nums" style={{ color: SEVERITY_COLORS[kpis.cityRiskLevel].text }}>
                 UTCI {Math.max(...WARDS_DATA.map(w => w.utci)).toFixed(1)}°C
               </div>
@@ -200,17 +226,17 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
 
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 2 — KPI Metric Cards (dynamically computed)
+          SECTION 2 — KPI Metric Cards (5 Core Demo Story Answers)
           ═══════════════════════════════════════════════════════════════ */}
-      <section id="kpi-cards" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <section id="kpi-cards" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
 
-        {/* Card 1: Current Heat Status */}
+        {/* Card 1: Current Heat Status (HOW SEVERE IS IT?) */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between transition-all hover:border-slate-300 shadow-xs border-t-2"
           style={{ borderTopColor: SEVERITY_COLORS[kpis.cityRiskLevel].hex }}
         >
           <div className="flex items-start justify-between gap-2 mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              Current Heat Status
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500" title="Operational risk severity level">
+              Current Risk Severity
             </span>
             <RiskBadge level={kpis.cityRiskLevel} size="sm" />
           </div>
@@ -221,6 +247,10 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
             >
               {kpis.cityRiskLevel.toUpperCase()}
             </span>
+            <div className="text-[11px] text-red-600 font-semibold flex items-center gap-1 mt-0.5">
+              <TrendingUp className="w-3 h-3 text-red-600" />
+              Trend: ↑ Increasing
+            </div>
           </div>
           <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
             <span>{kpis.highPlusCount} wards at High+ risk</span>
@@ -230,10 +260,34 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
           </div>
         </div>
 
-        {/* Card 2: Maximum HTSI */}
+        {/* Card 2: Estimated Population Exposed (WHO IS AFFECTED?) */}
+        <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between transition-all hover:border-slate-300 shadow-xs border-t-2 border-t-blue-500">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500" title="Modeled total population residing in wards with High, Very High, or Extreme risk">
+              Population Exposed
+            </span>
+            <Users className="w-4 h-4 text-blue-500" />
+          </div>
+          <div className="my-1">
+            <div className="text-3xl font-bold font-mono tracking-tight text-slate-900 tabular-nums">
+              {(kpis.totalExposedPopulation / 1000000).toFixed(2)}M
+            </div>
+            <div className="text-[11px] text-slate-500 mt-0.5 font-medium">
+              {kpis.totalExposedPopulation.toLocaleString('en-IN')} people modeled
+            </div>
+          </div>
+          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span>Estimated population exposure</span>
+            <span className="shrink-0 text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
+              MODELED
+            </span>
+          </div>
+        </div>
+
+        {/* Card 3: Maximum HTSI (HOW SEVERE IS IT?) */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between transition-all hover:border-slate-300 shadow-xs border-t-2 border-t-red-500">
           <div className="flex items-start justify-between gap-2 mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500" title="Project-specific composite Heat Thermal Stress Index (0–100)">
               Maximum HTSI
             </span>
             <Activity className="w-4 h-4 text-red-500" />
@@ -245,14 +299,14 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
             <span className="text-sm font-medium text-slate-500">/ 100</span>
           </div>
           <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Composite Thermal Stress Index</span>
+            <span>Composite Thermal Stress</span>
             <span className="shrink-0 text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-semibold">
-              CANONICAL HTSI
+              HTSI INDEX
             </span>
           </div>
         </div>
 
-        {/* Card 3: Highest Risk Ward */}
+        {/* Card 4: Highest Risk Ward (WHERE IS THE HEAT?) */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between transition-all hover:border-slate-300 shadow-xs border-t-2 border-t-[#F47C20]">
           <div className="flex items-start justify-between gap-2 mb-2">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
@@ -264,26 +318,32 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
             <span className="text-2xl font-bold tracking-tight text-slate-900">
               Ward {kpis.highestRiskWard.ward_id}
             </span>
-            <div className="text-xs text-slate-500 mt-0.5">{kpis.highestRiskWard.ward_name}</div>
+            <div className="text-xs text-slate-500 mt-0.5 truncate">{kpis.highestRiskWard.ward_name}</div>
           </div>
           <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
             <span className="font-mono text-red-600 font-semibold tabular-nums">
               Risk: {kpis.highestRiskWard.human_heat_risk.toFixed(3)}
             </span>
-            <button
-              type="button"
-              onClick={() => onSelectWard(kpis.highestRiskWard.ward_id)}
-              className="text-[#F47C20] hover:text-[#e06c15] font-semibold flex items-center gap-1 text-[11px] cursor-pointer"
-            >
-              Inspect <ChevronRight className="w-3 h-3" />
-            </button>
+            <div className="flex items-center gap-1.5">
+              {onOpenExplainability && (
+                <button
+                  type="button"
+                  onClick={() => onOpenExplainability(kpis.highestRiskWard.ward_id)}
+                  className="px-2 py-0.5 rounded bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-semibold flex items-center gap-1 text-[11px] cursor-pointer transition-colors"
+                  title="Explain why this ward is at highest risk"
+                >
+                  <Sparkles className="w-3 h-3 text-amber-600" />
+                  Why?
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Card 4: Extreme UTCI Wards */}
+        {/* Card 5: Extreme UTCI Wards */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between transition-all hover:border-slate-300 shadow-xs border-t-2 border-t-amber-500">
           <div className="flex items-start justify-between gap-2 mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500" title="Wards with Universal Thermal Climate Index (UTCI) >= 38°C (Strong Heat Stress)">
               Extreme UTCI Wards
             </span>
             <Thermometer className="w-4 h-4 text-amber-500" />
@@ -295,13 +355,14 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
             <span className="text-sm font-medium text-slate-500">wards ≥ 38°C</span>
           </div>
           <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Strong Heat Stress threshold</span>
+            <span>Strong Heat Stress</span>
             <span className="shrink-0 text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-semibold">
               UTCI ≥ 38°C
             </span>
           </div>
         </div>
       </section>
+
 
 
       {/* ═══════════════════════════════════════════════════════════════
@@ -439,11 +500,25 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
                   <div className="font-mono font-bold text-red-600 tabular-nums">{hoveredWard.human_heat_risk.toFixed(3)}</div>
                 </div>
               </div>
-              <div className="mt-2 text-slate-500 text-[10px]">
-                Zone {hoveredWard.zone_id} · {hoveredWard.zone_name} · {hoveredWard.region} Chennai · Pop: {hoveredWard.population.toLocaleString()}
+              <div className="mt-2 text-slate-500 text-[10px] flex items-center justify-between">
+                <span>Zone {hoveredWard.zone_id} · {hoveredWard.zone_name}</span>
+                {onOpenExplainability && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenExplainability(hoveredWard.ward_id);
+                    }}
+                    className="px-2 py-0.5 rounded bg-slate-900 text-amber-400 font-semibold text-[10px] flex items-center gap-1 hover:bg-slate-800 cursor-pointer"
+                  >
+                    <Sparkles className="w-2.5 h-2.5" />
+                    Why?
+                  </button>
+                )}
               </div>
             </div>
           )}
+
 
           {/* Inline Map Legend */}
           <div className="absolute bottom-4 right-4 z-20">
@@ -572,7 +647,78 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
 
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 5 — Alert Banner
+          SECTION 5 — Actionable Recommendations ("WHAT SHOULD WE DO?")
+          ═══════════════════════════════════════════════════════════════ */}
+      <section id="recommendations-section" className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden p-5 space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-orange-100 border border-orange-200 flex items-center justify-center text-[#F47C20]">
+              <ShieldAlert className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="font-bold text-sm text-slate-900 uppercase tracking-wide">
+                What Should We Do? (Actionable SOP Matrix)
+              </h2>
+              <p className="text-xs text-slate-500">
+                Recommended operational and public heat-safety interventions for current heat stress levels.
+              </p>
+            </div>
+          </div>
+          <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-semibold">
+            GCC HEAT ACTION PLAN (HAP)
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Citizens Recommendations */}
+          <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-4 space-y-2.5">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-900 uppercase tracking-wider">
+              <span className="w-2 h-2 rounded-full bg-[#F47C20]" />
+              For Citizens & Workers
+            </div>
+            <ul className="space-y-2 text-xs text-slate-700">
+              <li className="flex items-start gap-2">
+                <span className="text-[#F47C20] font-bold">•</span>
+                <span><strong>Stay Hydrated:</strong> Drink 3–4 liters of water or ORS daily, avoiding direct afternoon heat.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-[#F47C20] font-bold">•</span>
+                <span><strong>Avoid Peak Sun (12:00–15:30 IST):</strong> Rest in shaded or air-cooled environments during maximum solar irradiance.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-[#F47C20] font-bold">•</span>
+                <span><strong>Vulnerable Population Check:</strong> Assist elderly residents, infants, and outdoor workers susceptible to heat stroke.</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Authorities Recommendations */}
+          <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-4 space-y-2.5">
+            <div className="flex items-center gap-2 text-xs font-bold text-amber-900 uppercase tracking-wider">
+              <span className="w-2 h-2 rounded-full bg-amber-600" />
+              For GCC & Emergency Control
+            </div>
+            <ul className="space-y-2 text-xs text-slate-800">
+              <li className="flex items-start gap-2">
+                <span className="text-amber-700 font-bold">•</span>
+                <span><strong>Target High-Risk Wards:</strong> Deploy mobile drinking water tankers in Anna Nagar East (W86) & T. Nagar (W114).</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-700 font-bold">•</span>
+                <span><strong>Enforce Labor Pause:</strong> Restrict heavy outdoor construction labor between 12:00 PM and 3:30 PM IST.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-700 font-bold">•</span>
+                <span><strong>Cooling Shelter Readiness:</strong> Activate climate cooling spaces at local GCC Urban Health & Wellness Centres.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+
+      {/* ═══════════════════════════════════════════════════════════════
+          SECTION 6 — Alert Banner
           ═══════════════════════════════════════════════════════════════ */}
       <section
         id="dashboard-alert"
@@ -602,3 +748,4 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
     </div>
   );
 };
+
