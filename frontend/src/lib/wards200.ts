@@ -252,23 +252,6 @@ const WARD_SEEDS: WardSeed[] = [
   { id: 200, name: 'Semmancheri South Border', zone: 15, zoneName: 'Sholinganallur', region: 'South', grid: 'grid_12.8_80.2', lat: 12.855, lon: 80.225, pop: 18200, area: 3.50, hwc: 1, baseTemp: 34.5, baseHtsi: 50.8, baseUtci: 36.9, baseWbgt: 29.6 }
 ];
 
-// Helper to determine risk level from score
-function getRiskLevel(score: number): SeverityLevel {
-  if (score >= 0.70) return 'Extreme';
-  if (score >= 0.50) return 'Very High';
-  if (score >= 0.35) return 'High';
-  if (score >= 0.20) return 'Moderate';
-  return 'Normal';
-}
-
-function getHtsiLabel(htsi: number): SeverityLevel {
-  if (htsi >= 85) return 'Extreme';
-  if (htsi >= 75) return 'Very High';
-  if (htsi >= 65) return 'High';
-  if (htsi >= 55) return 'Moderate';
-  return 'Normal';
-}
-
 // Transform seeds into fully compliant canonical WardRecords
 export const ALL_200_WARDS: WardRecord[] = WARD_SEEDS.map((seed) => {
   const density = Math.round(seed.pop / seed.area);
@@ -277,17 +260,17 @@ export const ALL_200_WARDS: WardRecord[] = WARD_SEEDS.map((seed) => {
   const facilitiesPer10k = Number(((seed.hwc / (seed.pop / 10000))).toFixed(3));
   // Adaptive capacity norm: 1.0 = ~0.8 facilities per 10k
   const adaptNorm = Math.min(1, Math.max(0, facilitiesPer10k / 0.85));
-  // Reduced vulnerability V = 0.5*S + 0.5*(1-A)
-  const vulnerability = Number((0.5 * expNorm + 0.5 * (1 - adaptNorm)).toFixed(3));
-  const heatHazard = Number((seed.baseHtsi / 100).toFixed(3));
+  // DEVELOPMENT FIXTURES ONLY
+  // These values are placeholders for UI rendering and must NOT be used for scientific derivation.
+  // The backend API is the sole source of truth for all thermal and risk indices.
+  const vulnerability = 0.65; // Mock fixture
+  const heatHazard = Number((seed.baseHtsi / 100).toFixed(3)); // Mock fixture
   
-  // Formula A: H * E * V
-  const riskFormulaA = Number((heatHazard * expNorm * vulnerability).toFixed(3));
-  // Formula B: H * E * (0.5 + 0.5*V)
-  let riskFormulaB = Number((heatHazard * expNorm * (0.5 + 0.5 * vulnerability)).toFixed(3));
-  let finalRiskLevel = getRiskLevel(riskFormulaB);
+  const riskFormulaA = 0.55; // Mock fixture
+  let riskFormulaB = 0.62; // Mock fixture
+  let finalRiskLevel: SeverityLevel = 'High'; // Mock fixture
 
-  // Exact override for Ward 86 as mandated by user specification
+  // Preserve UI override for Ward 86 fixture
   if (seed.id === 86) {
     riskFormulaB = 0.71;
     finalRiskLevel = 'Very High';
@@ -311,8 +294,8 @@ export const ALL_200_WARDS: WardRecord[] = WARD_SEEDS.map((seed) => {
     wbgt_outdoor: seed.baseWbgt,
     heat_index: Number((seed.baseTemp + 6.2).toFixed(1)),
     htsi: seed.baseHtsi,
-    htsi_level: seed.baseHtsi >= 75 ? 4 : seed.baseHtsi >= 65 ? 3 : 2,
-    htsi_label: getHtsiLabel(seed.baseHtsi),
+    htsi_level: 3, // Mock fixture
+    htsi_label: 'High', // Mock fixture
     burden_24h: Number((seed.baseHtsi * 0.52).toFixed(1)),
     burden_72h: Number((seed.baseHtsi * 0.58).toFixed(1)),
     nighttime_stress: Number((seed.baseHtsi * 1.15).toFixed(1)),

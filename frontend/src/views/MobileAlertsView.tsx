@@ -55,7 +55,7 @@ export const MobileAlertsView: React.FC<MobileAlertsViewProps> = ({
       {alertWards.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-2">
           <ShieldCheck className="w-10 h-10 text-emerald-500 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900">You're all clear.</h3>
+          <h3 className="text-base font-bold text-slate-900">You&apos;re all clear.</h3>
           <p className="text-xs text-slate-500">No active heat alerts are currently available for GCC wards.</p>
         </div>
       ) : (

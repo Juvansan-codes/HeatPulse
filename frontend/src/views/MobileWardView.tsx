@@ -88,7 +88,7 @@ export const MobileWardView: React.FC<MobileWardViewProps> = ({
         </div>
 
         <p className="text-xs text-slate-300 leading-relaxed font-sans">
-          "{ward.ward_name} (Ward {ward.ward_id}) is currently classified as <strong>{ward.risk_level.toUpperCase()}</strong> risk primarily due to elevated thermal stress (HTSI {ward.htsi.toFixed(1)}) and high population exposure ({ward.population.toLocaleString()} residents)."
+          &quot;{ward.ward_name} (Ward {ward.ward_id}) is currently classified as <strong>{ward.risk_level.toUpperCase()}</strong> risk primarily due to elevated thermal stress (HTSI {ward.htsi.toFixed(1)}) and high population exposure ({ward.population.toLocaleString()} residents).&quot;
         </p>
 
         <div className="space-y-2 pt-1">

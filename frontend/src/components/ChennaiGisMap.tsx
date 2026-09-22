@@ -572,7 +572,7 @@ export const ChennaiGisMap: React.FC<ChennaiGisMapProps> = ({
 
             // Stroke styling
             let strokeColor = isMatch ? stroke : '#334155';
-            let strokeWidth = isSelected ? 3.5 : isHovered ? 2.5 : 1.0;
+            const strokeWidth = isSelected ? 3.5 : isHovered ? 2.5 : 1.0;
 
             if (isSelected) {
               strokeColor = '#38bdf8';
