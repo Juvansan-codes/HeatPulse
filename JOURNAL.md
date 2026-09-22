@@ -1,5 +1,23 @@
 # Development Journal
 
+## 2026-09-11 (Phase F1: Application Shell & Responsive Command Workspace)
+**Status:** IMPLEMENTED AND VALIDATED
+- **Application Shell & Navigation Architecture:**
+  - Built the unified application shell for HeatPulse with desktop GIS command center workspace and clean mobile responsive collapse.
+  - Sidebar navigation updated with Phase F1 core modules: **Dashboard**, **Heat Map** (large GIS workspace), **Forecast** (5-Day ML), **Alerts** (SOP matrix), **Ward Analysis** (Formula B dossiers), and **Methodology & Science**.
+  - Desktop sidebar supports clean collapse (`256px` to `72px`) with icon rail tooltips and persistent canonical provenance footer (200 GCC Wards, WorldPop R2025A 4.35M pop, 140 HWC facilities, 5 ERA5 land cells).
+- **Mobile Responsive Drawer:**
+  - Created `components/MobileNavDrawer.tsx` with glassmorphism slide-in drawer, full module navigation, fast search trigger, language switcher, and officer profile access.
+- **Modals & Command Panels:**
+  - Created `components/SettingsModal.tsx` providing display telemetry preferences (Celsius/Fahrenheit, km/h vs m/s), GIS basemap switcher (Obsidian Dark, Night Satellite, Clean Carto), sound alert toggles, data pipeline verification table, and GCC platform credits.
+  - Created `components/UserProfileModal.tsx` providing officer profile dossiers, operational role simulation (GCC Disaster Authority, Public Health Director, Zonal Officer, 108 EMS Coordinator), command jurisdiction, SOP clearance, and Ripon Building hotline details.
+- **Interactive Clickable Prototype Controller:**
+  - Created `components/PrototypeController.tsx` with device viewport switcher (Fluid Responsive, Desktop Large GIS Workspace 1440px, and Mobile iPhone 15 Pro 390px framed simulator), 6-flow interactive stepper, and clickable hotspot highlighting.
+- **Verification:**
+  - Production build (`npm run build`) succeeded with 0 errors.
+  - Dev server verified on `localhost:3000`. Full browser subagent navigation and screenshot verification across all 6 screens, settings modal, and device simulation passed.
+
+
 ## 2026-09-10 (Phase 3: WorldPop exposure)
 **Status:** IMPLEMENTED AND VALIDATED
 - Generated `data/processed/gis/ward_exposure_200.csv`: 200 derived WorldPop R2025A 2020, 100 m population estimates directly aggregated to the official current GCC 2025 ward polygons.
@@ -71,3 +89,16 @@
 - Validated end-to-end HTSI accuracy against Baseline (Raw NWP) and Mean Bias. The Operational configuration significantly out-performed both baselines across the 1–5 day forecast horizon.
 - Validated rigorous historical-forecast timeline construction, eliminating potential truth leakage in rolling parameters (B24, B72).
 - Conducted full row uniqueness, spatial boundary, and temporal clustering integrity tests. Grouped 4.1M continuous sub-alerts into ~662k continuous operational events across 200 wards.
+
+## 2026-09-10 (Phase F0: Frontend UI/UX Design Foundation & Complete Screen Flow)
+**Status:** IMPLEMENTED AND VALIDATED
+- **Visual Identity & Design System**: Established HeatPulse's design system in `docs/ui-ux-design-foundation.md` and `frontend/src/app/globals.css`. Implemented a non-negotiable 5-tier project severity system (Normal, Moderate, High, Very High, Extreme) with strict WCAG AA/AAA compliance. Built dark obsidian GIS intelligence theme (`#090D16`), monospace tabular metrics, and custom component tokens.
+- **Component Primitives**: Built reusable `RiskBadge`, `MetricCard`, `MapLegend`, `Header` (with live IST clock, status ticker, role selector, Cmd+K search), and `Sidebar` (with module navigation and canonical provenance badges).
+- **Complete 6-Screen Architecture**:
+  1. **Home Dashboard**: Executive situational awareness banner, 4 KPI cards, interactive 200-ward choropleth with multi-layer toggle, and top 10 critical triage table ranked by Formula B.
+  2. **Heat Map (GIS)**: Full-screen GIS workspace with 200 GCC wards, 15 Zones, 5 ERA5 grid overlays, layer switcher (`Formula B Risk`, `HTSI Hazard`, `UTCI`, `WBGT`, `Exposure`, `HWC Access`), and slide-over ward inspector.
+  3. **5-Day Forecast**: Lead Day 1 to 5 progression cards, 24-hour diurnal trajectory (00:00–23:00 IST) highlighting nocturnal load (22:00–06:00 IST) and solar noon exertion (12:00–15:00 IST), and Lead-Time MAE verification table.
+  4. **Ward Details**: Deep-dive ward dossier with interactive mathematical Formula B breakdown ($H \times E \times (0.5 + 0.5V)$ vs Formula A), thermal indicators, and healthcare accessibility metrics.
+  5. **Alerts & Advisories**: Role-based SOP matrix (GCC Administration, UPHC Clinics, Outdoor Labor, Vulnerable Public), bilingual press release generator (English/Tamil), and emergency escalation matrix.
+  6. **Methodology & Science**: End-to-end architecture pipeline, HTSI formulation, Liljegren WBGT vs UTCI ISO 7730 comparison, reduced vulnerability model, ML calibration audit table, and limitations register.
+- **Verification**: Production build (`npm run build`) passed with zero errors; complete browser session recording and screenshots verified.

@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1 import health, overview, wards, forecast, alerts
+from app.api.v1 import health, overview, wards, forecast, alerts, explanation
 
 app = FastAPI(
     title="SIH 2026 Heatwave Early Warning API",
@@ -27,7 +27,9 @@ app.include_router(overview.router, prefix="/api/v1", tags=["Overview"])
 app.include_router(wards.router, prefix="/api/v1", tags=["Wards"])
 app.include_router(forecast.router, prefix="/api/v1", tags=["Forecast"])
 app.include_router(alerts.router, prefix="/api/v1", tags=["Alerts"])
+app.include_router(explanation.router, prefix="/api/v1", tags=["Explainability"])
 
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the SIH 2026 Heatwave API"}
+
