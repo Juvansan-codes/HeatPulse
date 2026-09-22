@@ -109,7 +109,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
       totalExposedPopulation,
       sorted,
     };
-  }, []);
+  }, [WARDS_DATA]);
 
   // ─── Forecast data (today + 5 days) ────────────────────────────────
   const forecastAll = useMemo(() => [FORECAST_TODAY, ...FORECAST_DAYS], []);
@@ -124,7 +124,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
       : 'select areas';
 
     return `High heat risk expected in ${zonesStr} wards during afternoon hours (12:00–15:30 IST). Peak UTCI forecast at ${maxUtci.toFixed(1)}°C. Ensure hydration stations are operational and outdoor labor restrictions are enforced.`;
-  }, []);
+  }, [WARDS_DATA]);
 
 
   /* ═══════════════════════════════════════════════════════════════════
