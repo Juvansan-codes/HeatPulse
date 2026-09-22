@@ -128,9 +128,17 @@ export const ForecastView: React.FC = () => {
     return [];
   }, [forecastApi.data]);
 
-  const selectedDay = ALL_DAYS.find((d) => d.day_offset === selectedOffset) ?? ALL_DAYS[0];
-  const hourlyRows = useMemo(() => generateHourlyRows(selectedDay), [selectedDay]);
+  const selectedDay = ALL_DAYS.length > 0 ? (ALL_DAYS.find((d) => d.day_offset === selectedOffset) ?? ALL_DAYS[0]) : null;
+  const hourlyRows = useMemo(() => selectedDay ? generateHourlyRows(selectedDay) : [], [selectedDay]);
   const cfg = METRIC_CFG[chartMetric];
+
+  if (forecastApi.loading || ALL_DAYS.length === 0 || !selectedDay) {
+    return (
+      <div className="h-[calc(100vh-6.5rem)] flex items-center justify-center text-slate-500 animate-pulse bg-white rounded-2xl border border-slate-200">
+        Loading forecast data...
+      </div>
+    );
+  }
 
   // ------ SVG chart geometry ------
   const W = 640;

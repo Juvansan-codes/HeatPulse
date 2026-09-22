@@ -35,7 +35,16 @@ export const MobileForecastView: React.FC = () => {
     return [];
   }, [forecastApi.data]);
 
-  const selectedDay = forecastAll.find((d) => d.day_offset === selectedOffset) ?? forecastAll[0];
+  const selectedDay = forecastAll.length > 0 ? (forecastAll.find((d) => d.day_offset === selectedOffset) ?? forecastAll[0]) : null;
+
+  if (forecastApi.loading || forecastAll.length === 0 || !selectedDay) {
+    return (
+      <div className="flex items-center justify-center p-8 text-slate-500 animate-pulse text-sm">
+        Loading forecast data...
+      </div>
+    );
+  }
+
   const dayLabels = ['TODAY', 'MON', 'TUE', 'WED', 'THU', 'FRI'];
 
   const chartData = forecastAll.map((d, i) => ({
