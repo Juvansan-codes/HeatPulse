@@ -1,153 +1,148 @@
-import { SeverityLevel, WardRecord, ForecastDay } from '../types';
-import { BackendWardSchema, BackendForecastSchema, BackendAlertLevel } from './schema';
+// ─────────────────────────────────────────────────────────────────────────────
+// HeatPulse API → WardRecord Adapter
+//
+// Merges API ward list + forecast data into the existing WardRecord shape
+// used by all frontend views. This is a DISPLAY-ONLY mapping — no scientific
+// calculations are performed. Fields not available from the API are set to
+// sensible "no data" defaults and clearly marked.
+//
+// The adapter does NOT fabricate scientific values.
+// ─────────────────────────────────────────────────────────────────────────────
 
-/** Map backend alert_level enum ('LOW', 'MODERATE', 'HIGH', 'VERY_HIGH', 'EXTREME') to frontend SeverityLevel */
-export function mapBackendAlertLevelToSeverity(level: BackendAlertLevel): SeverityLevel {
-  switch (level) {
-    case 'LOW':
-      return 'Normal';
-    case 'MODERATE':
-      return 'Moderate';
-    case 'HIGH':
-      return 'High';
-    case 'VERY_HIGH':
-      return 'Very High';
-    case 'EXTREME':
-      return 'Extreme';
-    default:
-      return 'Normal';
-  }
+import type { WardRecord, SeverityLevel } from '../types';
+import type { ApiWardCollection, ApiForecastRecord, ApiWardDetailResponse } from './types';
+
+/**
+ * Map htsi_label string from API to SeverityLevel.
+ * If unknown or null, returns 'Normal'.
+ */
+function mapHtsiLabel(label: string | null): SeverityLevel {
+  if (!label) return 'Normal';
+  const normalized = label.trim();
+  if (normalized === 'Extreme') return 'Extreme';
+  if (normalized === 'Very High') return 'Very High';
+  if (normalized === 'High') return 'High';
+  if (normalized === 'Moderate') return 'Moderate';
+  return 'Normal';
 }
 
-/** Map frontend SeverityLevel to backend alert_level enum */
-export function mapSeverityToBackendAlertLevel(severity: SeverityLevel): BackendAlertLevel {
-  switch (severity) {
-    case 'Normal':
-      return 'LOW';
-    case 'Moderate':
-      return 'MODERATE';
-    case 'High':
-      return 'HIGH';
-    case 'Very High':
-      return 'VERY_HIGH';
-    case 'Extreme':
-      return 'EXTREME';
-    default:
-      return 'LOW';
-  }
+/**
+ * Determine risk_level from human_heat_risk value.
+ * Uses the same display thresholds the existing getWardLayerColor uses.
+ * This is NOT a scientific calculation — it's a UI categorization for display only.
+ */
+function riskLevelFromHHR(hhr: number | null): SeverityLevel {
+  if (hhr === null) return 'Normal';
+  if (hhr >= 0.70) return 'Extreme';
+  if (hhr >= 0.50) return 'Very High';
+  if (hhr >= 0.35) return 'High';
+  if (hhr >= 0.20) return 'Moderate';
+  return 'Normal';
 }
 
-/** Transform raw backend JSON schema object to frontend UI WardRecord */
-export function transformBackendWardToWardRecord(b: BackendWardSchema): WardRecord {
+/**
+ * Merge API ward basic info + one forecast record into a WardRecord.
+ * Fields not available from the API are set to 0 / empty / 'Normal'.
+ */
+export function mergeWardAndForecast(
+  wardId: number,
+  wardName: string,
+  zoneId: string | null,
+  forecast: ApiForecastRecord | undefined
+): WardRecord {
+  const htsi = forecast?.htsi ?? 0;
+  const utci = forecast?.utci ?? 0;
+  const wbgt = forecast?.wbgt_outdoor ?? 0;
+  const hhr = forecast?.human_heat_risk ?? 0;
+
   return {
-    ward_id: b.ward_id,
-    ward_name: b.ward_name,
-    zone_id: b.zone_id,
-    zone_name: b.zone,
-    region: b.region,
-    assigned_grid_id: b.assigned_grid_id,
-    grid_lat: b.grid_lat,
-    grid_lon: b.grid_lon,
-    
-    temperature_2m: b.temperature,
-    relative_humidity: b.relative_humidity,
-    wind_speed_10m: b.wind_speed,
-    solar_radiation: b.solar_radiation,
-    tmrt: b.tmrt,
-    utci: b.utci,
-    wbgt_outdoor: b.wbgt,
-    heat_index: b.heat_index,
-    
-    htsi: b.htsi,
-    htsi_level: b.htsi_level,
-    htsi_label: mapBackendAlertLevelToSeverity(b.alert_level),
-    burden_24h: b.burden_24h,
-    burden_72h: b.burden_72h,
-    nighttime_stress: b.nighttime_stress,
-    is_extreme_event: b.is_extreme_event,
-    
-    population: b.population,
-    area_km2: Number((b.population / (b.population_density || 1)).toFixed(2)),
-    population_density: b.population_density,
-    exposure_density_norm: b.exposure_density_norm,
-    
-    healthcare_facility_count: b.healthcare_facility_count,
-    healthcare_facilities_per_10k: b.healthcare_facilities_per_10k,
-    adaptive_capacity_norm: b.adaptive_capacity_norm,
-    
-    vulnerability: b.vulnerability,
-    heat_hazard: b.heat_hazard,
-    human_heat_risk_formula_a: b.human_heat_risk_formula_a,
-    human_heat_risk_formula_b: b.human_heat_risk_formula_b,
-    human_heat_risk: b.human_heat_risk,
-    risk_level: mapBackendAlertLevelToSeverity(b.alert_level)
+    ward_id: wardId,
+    ward_name: wardName,
+    zone_id: zoneId ? parseInt(zoneId, 10) || 0 : 0,
+    zone_name: zoneId ? `Zone ${zoneId}` : 'Unknown',
+    region: 'Central', // Not provided by API — display placeholder
+    assigned_grid_id: forecast?.assigned_grid_id ?? '',
+    grid_lat: 0, // Not needed for Mapbox — was for SVG
+    grid_lon: 0,
+
+    // Thermal metrics — directly from forecast, NO calculation
+    temperature_2m: forecast?.temperature_2m ?? 0,
+    relative_humidity: forecast?.relative_humidity ?? 0,
+    wind_speed_10m: forecast?.wind_speed_10m ?? 0,
+    solar_radiation: forecast?.solar_radiation ?? 0,
+    tmrt: forecast?.mean_radiant_temp ?? 0,
+    utci,
+    wbgt_outdoor: wbgt,
+    heat_index: forecast?.heat_index ?? 0,
+
+    // HTSI — directly from forecast
+    htsi,
+    htsi_level: forecast?.htsi_level ?? 0,
+    htsi_label: mapHtsiLabel(forecast?.htsi_label ?? null),
+    burden_24h: forecast?.burden_24h ?? 0,
+    burden_72h: forecast?.burden_72h ?? 0,
+    nighttime_stress: 0, // Not in API
+    is_extreme_event: forecast?.extreme_utci_flag ?? false,
+
+    // Exposure — not in bulk forecast; set to 0
+    population: 0,
+    area_km2: 0,
+    population_density: 0,
+    exposure_density_norm: 0,
+
+    // Healthcare — not in bulk forecast
+    healthcare_facility_count: 0,
+    healthcare_facilities_per_10k: 0,
+    adaptive_capacity_norm: 0,
+
+    // Risk — directly from forecast
+    vulnerability: 0, // Only available via /wards/{id} detail
+    heat_hazard: forecast?.thermal_hazard_score ?? (htsi / 100),
+    human_heat_risk_formula_a: 0,
+    human_heat_risk_formula_b: hhr,
+    human_heat_risk: hhr,
+    risk_level: riskLevelFromHHR(hhr),
   };
 }
 
-/** Transform frontend WardRecord to raw backend JSON schema object */
-export function transformWardRecordToBackendWard(w: WardRecord): BackendWardSchema {
-  return {
-    ward_id: w.ward_id,
-    ward_name: w.ward_name,
-    zone: w.zone_name,
-    zone_id: w.zone_id,
-    region: w.region,
-    assigned_grid_id: w.assigned_grid_id,
-    grid_lat: w.grid_lat,
-    grid_lon: w.grid_lon,
-    
-    population: w.population,
-    population_density: w.population_density,
-    vulnerability: w.vulnerability,
-    healthcare_facility_count: w.healthcare_facility_count,
-    healthcare_facilities_per_10k: w.healthcare_facilities_per_10k,
-    
-    timestamp: new Date().toISOString(),
-    temperature: w.temperature_2m,
-    relative_humidity: w.relative_humidity,
-    wind_speed: w.wind_speed_10m,
-    solar_radiation: w.solar_radiation,
-    tmrt: w.tmrt,
-    
-    utci: w.utci,
-    wbgt: w.wbgt_outdoor,
-    heat_index: w.heat_index,
-    htsi: w.htsi,
-    htsi_level: w.htsi_level,
-    
-    heat_hazard: w.heat_hazard,
-    exposure_density_norm: w.exposure_density_norm,
-    adaptive_capacity_norm: w.adaptive_capacity_norm,
-    human_heat_risk_formula_a: w.human_heat_risk_formula_a,
-    human_heat_risk_formula_b: w.human_heat_risk_formula_b,
-    human_heat_risk: w.human_heat_risk,
-    
-    burden_24h: w.burden_24h,
-    burden_72h: w.burden_72h,
-    nighttime_stress: w.nighttime_stress,
-    is_extreme_event: w.is_extreme_event,
-    
-    alert_level: mapSeverityToBackendAlertLevel(w.risk_level)
-  };
+/**
+ * Build a complete WardRecord[] from API /wards + /forecast?lead_day=1.
+ * Joins by ward_id. Wards without forecast data get neutral/zero values.
+ */
+export function buildWardRecords(
+  wardsApi: ApiWardCollection,
+  forecasts: ApiForecastRecord[]
+): WardRecord[] {
+  // Index forecasts by ward_id — take the first record per ward (latest valid_time)
+  const forecastMap = new Map<number, ApiForecastRecord>();
+  for (const f of forecasts) {
+    if (f.ward_id !== null && !forecastMap.has(f.ward_id)) {
+      forecastMap.set(f.ward_id, f);
+    }
+  }
+
+  return wardsApi.features.map(feat => {
+    const { ward_id, ward_name, zone_id } = feat.properties;
+    const forecast = forecastMap.get(ward_id);
+    return mergeWardAndForecast(ward_id, ward_name, zone_id, forecast);
+  });
 }
 
-/** Transform raw backend forecast JSON object to frontend ForecastDay */
-export function transformBackendForecastToForecastDay(f: BackendForecastSchema): ForecastDay {
+/**
+ * Enrich an existing WardRecord with detail data from /wards/{id}.
+ * Only updates fields that the detail endpoint provides.
+ */
+export function enrichWithDetail(
+  base: WardRecord,
+  detail: ApiWardDetailResponse
+): WardRecord {
   return {
-    day_offset: f.day_offset,
-    date: f.date,
-    day_name: f.day_name,
-    max_temperature: f.max_temperature,
-    min_temperature: f.min_temperature,
-    avg_rh: f.avg_rh,
-    max_wind_speed: f.max_wind_speed,
-    max_utci: f.max_utci,
-    max_wbgt: f.max_wbgt,
-    max_htsi: f.max_htsi,
-    human_heat_risk: Number((f.max_htsi / 100 * 0.55).toFixed(3)),
-    risk_level: mapBackendAlertLevelToSeverity(f.alert_level),
-    nighttime_stress_flag: f.nighttime_stress_flag,
-    ml_lead_mae_temp: f.ml_lead_mae_temp,
-    ml_lead_mae_htsi: f.ml_lead_mae_htsi
+    ...base,
+    population: detail.population ?? 0,
+    population_density: detail.population_density ?? 0,
+    area_km2: detail.area_km2 ?? 0,
+    healthcare_facility_count: detail.healthcare_facility_count ?? 0,
+    healthcare_facilities_per_10k: detail.healthcare_facilities_per_10000_derived_population ?? 0,
+    vulnerability: detail.vulnerability ?? 0,
   };
 }

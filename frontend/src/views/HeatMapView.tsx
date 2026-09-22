@@ -24,17 +24,18 @@ import {
 } from 'lucide-react';
 
 interface HeatMapViewProps {
+  wards: WardRecord[];
   onSelectWard: (wardId: number) => void;
   onOpenExplainability?: (wardId: number) => void;
 }
 
-export const HeatMapView: React.FC<HeatMapViewProps> = ({ onSelectWard, onOpenExplainability }) => {
+export const HeatMapView: React.FC<HeatMapViewProps> = ({ wards: WARDS_DATA, onSelectWard, onOpenExplainability }) => {
   const [selectedLayer, setSelectedLayer] = useState<HeatLayerType>('risk');
   const [selectedZone, setSelectedZone] = useState<number | 'all'>('all');
   const [selectedSeverity, setSelectedSeverity] = useState<SeverityLevel | 'All'>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [activeWard, setActiveWard] = useState<WardRecord>(
-    WARDS_DATA.find((w) => w.ward_id === 86) || WARDS_DATA[0]
+  const [activeWard, setActiveWard] = useState<WardRecord | null>(
+    WARDS_DATA.find((w) => w.ward_id === 86) || WARDS_DATA[0] || null
   );
   const [showGridsOverlay, setShowGridsOverlay] = useState<boolean>(true);
   const [isLayerSelectorOpen, setIsLayerSelectorOpen] = useState<boolean>(true);
@@ -63,6 +64,10 @@ export const HeatMapView: React.FC<HeatMapViewProps> = ({ onSelectWard, onOpenEx
     }
     onSelectWard(wardId);
   };
+
+  if (!activeWard || WARDS_DATA.length === 0) {
+    return <div className="h-full flex items-center justify-center text-slate-500">No ward data available.</div>;
+  }
 
   return (
     <div className="h-[calc(100vh-6.5rem)] flex flex-col gap-3 animate-fadeIn">

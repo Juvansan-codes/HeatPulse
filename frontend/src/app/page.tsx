@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Header } from '../components/Header';
 import { Sidebar, ScreenId } from '../components/Sidebar';
 import { MobileNavDrawer } from '../components/MobileNavDrawer';
@@ -21,10 +21,13 @@ import { MobileWardView } from '../views/MobileWardView';
 import { MobileForecastView } from '../views/MobileForecastView';
 import { MobileAlertsView } from '../views/MobileAlertsView';
 import { WARDS_DATA } from '../lib/data';
-import { Search, X, ArrowRight, Smartphone } from 'lucide-react';
+import { useWards, useForecastByDay, IS_MOCK } from '../lib/api/hooks';
+import { buildWardRecords } from '../lib/api/adapter';
+import { Search, X, ArrowRight, Smartphone, Loader2, AlertTriangle } from 'lucide-react';
 import { RiskBadge } from '../components/RiskBadge';
 import { useHeatPulseStore } from '../store/heatpulse-store';
 import { StaleBadge } from '../components/ui/StaleBadge';
+import type { WardRecord } from '../lib/types';
 
 export default function Home() {
   const [currentScreen, setCurrentScreen] = useState<ScreenId>('dashboard');
@@ -40,6 +43,22 @@ export default function Home() {
   const isSearchOpen = useHeatPulseStore((s) => s.isSearchModalOpen);
   const setIsSearchOpen = useHeatPulseStore((s) => s.setSearchModalOpen);
   const staleTimestamp = useHeatPulseStore((s) => s.staleTimestamp);
+
+  // ── API Data Hooks ──
+  const wardsApi = useWards();
+  const forecastApi = useForecastByDay(1);
+
+  // Build WardRecord[] from API data, or use fixtures in mock mode
+  const ACTIVE_WARDS: WardRecord[] = useMemo(() => {
+    if (IS_MOCK) return WARDS_DATA;
+    if (wardsApi.data && forecastApi.data) {
+      return buildWardRecords(wardsApi.data, forecastApi.data.forecasts);
+    }
+    return [];
+  }, [wardsApi.data, forecastApi.data]);
+
+  const apiLoading = !IS_MOCK && (wardsApi.loading || forecastApi.loading);
+  const apiError = !IS_MOCK ? (wardsApi.error || forecastApi.error) : null;
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<string>('GCC Disaster Authority');
@@ -115,9 +134,9 @@ export default function Home() {
     setSearchQuery('');
   }, []);
 
-  // Search filter
+  // Search filter — uses API-backed wards
   const searchResults = searchQuery.trim()
-    ? WARDS_DATA.filter((w) => {
+    ? ACTIVE_WARDS.filter((w) => {
         const q = searchQuery.toLowerCase();
         return (
           w.ward_name.toLowerCase().includes(q) ||
@@ -157,8 +176,25 @@ export default function Home() {
         {/* Dynamic View Canvas with smooth transition: Optimized for GIS and high-density dashboard */}
         <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-6 bg-slate-50 pb-24">
           <div key={viewKey} className="animate-fadeIn">
-            {currentScreen === 'dashboard' && (
+            {/* Global API Loading State */}
+            {apiLoading && (
+              <div className="flex items-center justify-center p-12">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500 mr-3" />
+                <span className="text-slate-500">Loading HeatPulse data from API...</span>
+              </div>
+            )}
+            {/* Global API Error State */}
+            {apiError && !apiLoading && (
+              <div className="flex flex-col items-center justify-center p-12 text-center">
+                <AlertTriangle className="w-12 h-12 text-red-500 mb-4" />
+                <h2 className="text-lg font-bold text-slate-900 mb-2">API Unavailable</h2>
+                <p className="text-sm text-slate-500 max-w-md">{apiError}</p>
+                <p className="text-xs text-slate-400 mt-2">The backend may be starting up. Please try refreshing.</p>
+              </div>
+            )}
+            {!apiLoading && !apiError && currentScreen === 'dashboard' && (
               <HomeDashboardView
+                wards={ACTIVE_WARDS}
                 onSelectWard={handleSelectWard}
                 onNavigateToMap={() => handleNavigate('map')}
                 onNavigateToForecast={() => handleNavigate('forecast')}
@@ -167,8 +203,9 @@ export default function Home() {
               />
             )}
 
-            {currentScreen === 'map' && (
+            {!apiLoading && !apiError && currentScreen === 'map' && (
               <HeatMapView
+                wards={ACTIVE_WARDS}
                 onSelectWard={handleSelectWard}
                 onOpenExplainability={handleOpenExplainability}
               />

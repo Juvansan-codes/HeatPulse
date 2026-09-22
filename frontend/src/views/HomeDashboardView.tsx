@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 
 interface HomeDashboardViewProps {
+  wards: WardRecord[];
   onSelectWard: (wardId: number) => void;
   onNavigateToMap?: () => void;
   onNavigateToForecast?: () => void;
@@ -51,6 +52,7 @@ const SEVERITY_COLORS: Record<SeverityLevel, { bg: string; text: string; border:
    Main Dashboard Component
    ──────────────────────────────────────────────────────────────────────── */
 export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
+  wards: WARDS_DATA,
   onSelectWard,
   onNavigateToMap,
   onOpenExplainability
