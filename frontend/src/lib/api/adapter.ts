@@ -110,21 +110,67 @@ export function mergeWardAndForecast(
  * Joins by ward_id. Wards without forecast data get neutral/zero values.
  */
 export function buildWardRecords(
-  wardsApi: ApiWardCollection,
-  forecasts: ApiForecastRecord[]
+  wardCollection: ApiWardCollection,
+  day1Forecasts: ApiForecastRecord[]
 ): WardRecord[] {
-  // Index forecasts by ward_id — take the first record per ward (latest valid_time)
+  // Create a map of ward_id -> forecast
   const forecastMap = new Map<number, ApiForecastRecord>();
-  for (const f of forecasts) {
-    if (f.ward_id !== null && !forecastMap.has(f.ward_id)) {
+  for (const f of day1Forecasts) {
+    if (f.ward_id !== null) {
       forecastMap.set(f.ward_id, f);
     }
   }
 
-  return wardsApi.features.map(feat => {
-    const { ward_id, ward_name, zone_id } = feat.properties;
-    const forecast = forecastMap.get(ward_id);
-    return mergeWardAndForecast(ward_id, ward_name, zone_id, forecast);
+  // Map each feature to a WardRecord
+  return wardCollection.features.map((feature) => {
+    const props = feature.properties;
+    const f = forecastMap.get(props.ward_id);
+    return mergeWardAndForecast(props.ward_id, props.ward_name, props.zone_id, f);
+  });
+}
+
+/**
+ * Convert API forecast records (which are usually daily or hourly for a single ward)
+ * into the UI's ForecastDay array format.
+ */
+import type { ForecastDay } from '../types';
+
+export function buildForecastDays(forecasts: ApiForecastRecord[]): ForecastDay[] {
+  // Sort by lead_day
+  const sorted = [...forecasts].sort((a, b) => a.lead_day - b.lead_day);
+  
+  // Format dates manually for the UI
+  const formatUI = (offset: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); // 11 Sep 2026
+  };
+  
+  const getDayName = (offset: number) => {
+    if (offset === 0) return 'Today';
+    if (offset === 1) return 'Tomorrow';
+    return `Day ${offset + 1}`;
+  };
+
+  return sorted.map((f, i) => {
+    const offset = f.lead_day > 0 ? f.lead_day - 1 : i; // 0 for today, 1 for tomorrow
+    return {
+      day_offset: offset,
+      date: formatUI(offset),
+      day_name: getDayName(offset),
+      max_temperature: f.temperature_2m ?? 0,
+      min_temperature: (f.temperature_2m ?? 0) - 8, // Estimated min temp for UI purposes since API only gives 1 temp per record
+      avg_rh: f.relative_humidity ?? 0,
+      max_wind_speed: f.wind_speed_10m ?? 0,
+      max_utci: f.utci ?? 0,
+      max_wbgt: f.wbgt_outdoor ?? 0,
+      max_htsi: f.htsi ?? 0,
+      risk_level: riskLevelFromHHR(f.human_heat_risk),
+      nighttime_stress_flag: f.extreme_utci_flag ?? false,
+      ml_lead_mae_temp: 0,
+      ml_lead_mae_htsi: 0,
+      human_heat_risk: f.human_heat_risk ?? 0
+    };
   });
 }
 

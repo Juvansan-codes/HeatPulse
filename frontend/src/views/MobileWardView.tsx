@@ -1,7 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { WARDS_DATA, FORECAST_DAYS, FORECAST_TODAY } from '../lib/data';
+import { useWardForecast, IS_MOCK } from '../lib/api/hooks';
+import { buildForecastDays } from '../lib/api/adapter';
+import { ForecastDay } from '../lib/types';
 import { RiskBadge } from '../components/RiskBadge';
 import {
   Sparkles,
@@ -28,7 +31,12 @@ export const MobileWardView: React.FC<MobileWardViewProps> = ({
   onOpenExplainability
 }) => {
   const ward = WARDS_DATA.find((w) => w.ward_id === selectedWardId) || WARDS_DATA[0];
-  const forecastAll = [FORECAST_TODAY, ...FORECAST_DAYS];
+  const forecastApi = useWardForecast(selectedWardId);
+  const forecastAll = useMemo<ForecastDay[]>(() => {
+    if (IS_MOCK) return [FORECAST_TODAY, ...FORECAST_DAYS];
+    if (forecastApi.data) return buildForecastDays(forecastApi.data.forecast);
+    return [];
+  }, [forecastApi.data]);
 
   return (
     <div className="space-y-4 pb-20 animate-fadeIn text-slate-900">

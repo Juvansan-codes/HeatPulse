@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { FORECAST_DAYS, FORECAST_TODAY } from '../lib/data';
 import { ForecastDay, SeverityLevel } from '../lib/types';
+import { useWardForecast, IS_MOCK } from '../lib/api/hooks';
+import { buildForecastDays } from '../lib/api/adapter';
 import { RiskBadge } from '../components/RiskBadge';
 import {
   Sun,
@@ -29,7 +31,7 @@ interface HourlyRow {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-const ALL_DAYS: ForecastDay[] = [FORECAST_TODAY, ...FORECAST_DAYS];
+// const ALL_DAYS: ForecastDay[] = [FORECAST_TODAY, ...FORECAST_DAYS];
 
 const riskColor = (level: SeverityLevel) => {
   const map: Record<SeverityLevel, string> = {
@@ -118,6 +120,13 @@ export const ForecastView: React.FC = () => {
   const [selectedOffset, setSelectedOffset] = useState<number>(0);
   const [chartMetric, setChartMetric] = useState<ChartMetric>('utci');
   const [hoveredDayOffset, setHoveredDayOffset] = useState<number | null>(null);
+
+  const forecastApi = useWardForecast(86);
+  const ALL_DAYS = useMemo<ForecastDay[]>(() => {
+    if (IS_MOCK) return [FORECAST_TODAY, ...FORECAST_DAYS];
+    if (forecastApi.data) return buildForecastDays(forecastApi.data.forecast);
+    return [];
+  }, [forecastApi.data]);
 
   const selectedDay = ALL_DAYS.find((d) => d.day_offset === selectedOffset) ?? ALL_DAYS[0];
   const hourlyRows = useMemo(() => generateHourlyRows(selectedDay), [selectedDay]);

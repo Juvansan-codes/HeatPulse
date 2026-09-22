@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { WardRecord, SeverityLevel } from '../lib/types';
 import { FORECAST_DAYS } from '../lib/data';
+import { useWardForecast, IS_MOCK } from '../lib/api/hooks';
+import { buildForecastDays } from '../lib/api/adapter';
 import { TrendingUp, AlertTriangle, Info, Calendar } from 'lucide-react';
 
 interface WardForecastChartProps {
@@ -15,24 +17,30 @@ export const WardForecastChart: React.FC<WardForecastChartProps> = ({ ward }) =>
   const [activeMetric, setActiveMetric] = useState<MetricType>('htsi');
   const [hoveredDay, setHoveredDay] = useState<number | null>(null);
 
-  // DEVELOPMENT FIXTURES ONLY
-  // Direct use of city-wide FORECAST_DAYS values as temporary UI placeholders.
-  // The backend API will provide exact ward-level 5-day forecast trajectories.
-  const forecastPoints = FORECAST_DAYS.map((cityDay) => {
-    return {
-      dayOffset: cityDay.day_offset,
-      dayCode: `D${cityDay.day_offset}`,
-      dayName: cityDay.day_name,
-      date: cityDay.date,
-      htsi: cityDay.max_htsi, // Mock fixture
-      temp: cityDay.max_temperature, // Mock fixture
-      utci: cityDay.max_utci, // Mock fixture
-      wbgt: cityDay.max_wbgt, // Mock fixture
-      risk: cityDay.risk_level, // Mock fixture
-      maeHtsi: cityDay.ml_lead_mae_htsi,
-      maeTemp: cityDay.ml_lead_mae_temp
-    };
-  });
+  const forecastApi = useWardForecast(ward.ward_id);
+
+  const forecastPoints = useMemo(() => {
+    let sourceDays = FORECAST_DAYS;
+    if (!IS_MOCK && forecastApi.data) {
+      sourceDays = buildForecastDays(forecastApi.data.forecast);
+    }
+    
+    return sourceDays.map((cityDay) => {
+      return {
+        dayOffset: cityDay.day_offset,
+        dayCode: `D${cityDay.day_offset}`,
+        dayName: cityDay.day_name,
+        date: cityDay.date,
+        htsi: cityDay.max_htsi,
+        temp: cityDay.max_temperature,
+        utci: cityDay.max_utci,
+        wbgt: cityDay.max_wbgt,
+        risk: cityDay.risk_level,
+        maeHtsi: cityDay.ml_lead_mae_htsi,
+        maeTemp: cityDay.ml_lead_mae_temp
+      };
+    });
+  }, [forecastApi.data]);
 
   // Scale parameters based on active metric
   const metricConfigs: Record<MetricType, { label: string; unit: string; min: number; max: number; ticks: number[]; color: string }> = {

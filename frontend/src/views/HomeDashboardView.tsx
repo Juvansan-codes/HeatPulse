@@ -5,7 +5,9 @@ import { MetricCard } from '../components/MetricCard';
 import { RiskBadge } from '../components/RiskBadge';
 import { MapLegend } from '../components/MapLegend';
 import { WARDS_DATA, FORECAST_DAYS, FORECAST_TODAY, CHENNAI_ZONES } from '../lib/data';
-import { WardRecord, SeverityLevel } from '../lib/types';
+import { useWardForecast, IS_MOCK } from '../lib/api/hooks';
+import { buildForecastDays } from '../lib/api/adapter';
+import { WardRecord, SeverityLevel, ForecastDay } from '../lib/types';
 import {
   AlertTriangle,
   Flame,
@@ -112,7 +114,12 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({
   }, [WARDS_DATA]);
 
   // ─── Forecast data (today + 5 days) ────────────────────────────────
-  const forecastAll = useMemo(() => [FORECAST_TODAY, ...FORECAST_DAYS], []);
+  const forecastApi = useWardForecast(86);
+  const forecastAll = useMemo<ForecastDay[]>(() => {
+    if (IS_MOCK) return [FORECAST_TODAY, ...FORECAST_DAYS];
+    if (forecastApi.data) return buildForecastDays(forecastApi.data.forecast);
+    return [];
+  }, [forecastApi.data]);
 
   // ─── Dynamic alert text ────────────────────────────────────────────
   const alertText = useMemo(() => {

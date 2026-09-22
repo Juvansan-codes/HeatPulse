@@ -1,7 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { FORECAST_DAYS, FORECAST_TODAY } from '../lib/data';
+import { ForecastDay, SeverityLevel } from '../lib/types';
+import { useWardForecast, IS_MOCK } from '../lib/api/hooks';
+import { buildForecastDays } from '../lib/api/adapter';
 import { RiskBadge } from '../components/RiskBadge';
 import {
   Calendar,
@@ -22,11 +25,21 @@ import {
 } from 'recharts';
 
 export const MobileForecastView: React.FC = () => {
-  const forecastAll = [FORECAST_TODAY, ...FORECAST_DAYS];
+  const [selectedOffset, setSelectedOffset] = useState<number>(0);
+  const [chartMetric, setChartMetric] = useState<'htsi' | 'utci'>('utci');
+
+  const forecastApi = useWardForecast(86);
+  const forecastAll = useMemo<ForecastDay[]>(() => {
+    if (IS_MOCK) return [FORECAST_TODAY, ...FORECAST_DAYS];
+    if (forecastApi.data) return buildForecastDays(forecastApi.data.forecast);
+    return [];
+  }, [forecastApi.data]);
+
+  const selectedDay = forecastAll.find((d) => d.day_offset === selectedOffset) ?? forecastAll[0];
   const dayLabels = ['TODAY', 'MON', 'TUE', 'WED', 'THU', 'FRI'];
 
   const chartData = forecastAll.map((d, i) => ({
-    day: dayLabels[i],
+    day: dayLabels[i] || `DAY ${i}`,
     date: d.date,
     htsi: d.max_htsi,
     utci: d.max_utci,
