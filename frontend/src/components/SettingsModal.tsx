@@ -242,7 +242,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button
                       key={style.id}
                       type="button"
-                      onClick={() => setLocalConfig({ ...localConfig, mapStyle: style.id as any })}
+                      onClick={() => setLocalConfig({ ...localConfig, mapStyle: style.id as 'obsidian' | 'satellite' | 'topo' })}
                       className={`p-3 rounded-lg border text-left cursor-pointer transition-all ${
                         localConfig.mapStyle === style.id
                           ? 'bg-orange-50 border-[#F47C20] text-slate-900 shadow-xs'

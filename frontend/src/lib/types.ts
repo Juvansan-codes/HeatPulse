@@ -90,3 +90,16 @@ export interface AlertProtocol {
   vulnerable_public: string[];
   tamil_summary: string;
 }
+
+export interface ExplanationContract {
+  risk: number;
+  heat_hazard: number;
+  exposure: number;
+  vulnerability: number;
+  drivers: {
+    factor: string;
+    contribution: string;
+    impact: string;
+  }[];
+  summary: string;
+}

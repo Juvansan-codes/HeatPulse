@@ -146,7 +146,7 @@ export const MobileHomeView: React.FC<MobileHomeViewProps> = ({
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
             <AlertTriangle className="w-4 h-4 text-amber-700" />
-            Today's Heat Advisory
+            Today&apos;s Heat Advisory
           </span>
           <span className="text-[10px] font-mono text-amber-800 font-bold px-1.5 py-0.5 rounded bg-amber-100 border border-amber-300">
             ACTIVE

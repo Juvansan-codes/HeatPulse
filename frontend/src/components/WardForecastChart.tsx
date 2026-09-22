@@ -15,35 +15,20 @@ export const WardForecastChart: React.FC<WardForecastChartProps> = ({ ward }) =>
   const [activeMetric, setActiveMetric] = useState<MetricType>('htsi');
   const [hoveredDay, setHoveredDay] = useState<number | null>(null);
 
-  // Derive ward-specific 5-day trajectory based on ward baseline and citywide forecast offsets
+  // DEVELOPMENT FIXTURES ONLY
+  // Direct use of city-wide FORECAST_DAYS values as temporary UI placeholders.
+  // The backend API will provide exact ward-level 5-day forecast trajectories.
   const forecastPoints = FORECAST_DAYS.map((cityDay) => {
-    // Citywide baseline is ~75 HTSI, 38.4°C temp, 43.1°C UTCI, 33.2°C WBGT
-    const htsiDelta = cityDay.max_htsi - 75.0;
-    const tempDelta = cityDay.max_temperature - 38.4;
-    const utciDelta = cityDay.max_utci - 43.1;
-    const wbgtDelta = cityDay.max_wbgt - 33.2;
-
-    const wardHtsi = Math.min(100, Math.max(15, ward.htsi + htsiDelta * 0.85));
-    const wardTemp = Math.max(28, ward.temperature_2m + tempDelta);
-    const wardUtci = Math.max(25, ward.utci + utciDelta);
-    const wardWbgt = Math.max(22, ward.wbgt_outdoor + wbgtDelta);
-
-    let dayRisk: SeverityLevel = 'Normal';
-    if (wardHtsi >= 80) dayRisk = 'Extreme';
-    else if (wardHtsi >= 70) dayRisk = 'Very High';
-    else if (wardHtsi >= 58) dayRisk = 'High';
-    else if (wardHtsi >= 45) dayRisk = 'Moderate';
-
     return {
       dayOffset: cityDay.day_offset,
       dayCode: `D${cityDay.day_offset}`,
       dayName: cityDay.day_name,
       date: cityDay.date,
-      htsi: Number(wardHtsi.toFixed(1)),
-      temp: Number(wardTemp.toFixed(1)),
-      utci: Number(wardUtci.toFixed(1)),
-      wbgt: Number(wardWbgt.toFixed(1)),
-      risk: dayRisk,
+      htsi: cityDay.max_htsi, // Mock fixture
+      temp: cityDay.max_temperature, // Mock fixture
+      utci: cityDay.max_utci, // Mock fixture
+      wbgt: cityDay.max_wbgt, // Mock fixture
+      risk: cityDay.risk_level, // Mock fixture
       maeHtsi: cityDay.ml_lead_mae_htsi,
       maeTemp: cityDay.ml_lead_mae_temp
     };

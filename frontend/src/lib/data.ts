@@ -1,6 +1,20 @@
+/**
+ * DEVELOPMENT FIXTURES ONLY
+ * 
+ * IMPORTANT: 
+ * The data structures in this file (CHENNAI_ZONES, ERA5_GRIDS, FORECAST_TODAY, 
+ * FORECAST_DAYS, ALERT_PROTOCOLS, etc.) are strictly for UI development.
+ * 
+ * - They must NOT be treated as authoritative scientific data.
+ * - They are isolated from production/API data.
+ * - Do NOT derive new scientific values, thresholds, or classifications from them.
+ * - This entire file will be replaced by dynamic backend API responses before production.
+ * 
+ * The FastAPI backend remains the sole scientific source of truth.
+ */
+
 import { AlertProtocol, ForecastDay, WardRecord, ZoneSummary } from './types';
 import { ALL_200_WARDS } from './wards200';
-
 export const CHENNAI_ZONES: ZoneSummary[] = [
   { zone_id: 1, zone_name: 'Thiruvottiyur', region: 'North', total_wards: 14, total_derived_pop: 274800, max_risk_level: 'High', avg_htsi: 61.4, hwc_count: 8 },
   { zone_id: 2, zone_name: 'Manali', region: 'North', total_wards: 7, total_derived_pop: 138500, max_risk_level: 'Moderate', avg_htsi: 58.2, hwc_count: 5 },

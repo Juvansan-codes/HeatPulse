@@ -57,7 +57,7 @@ Emergency Contact: GCC Helpline 1913 | Medical Emergency 108`
               Actionable Public Health Advisories & Escalation Protocols
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Role-specific standard operating procedures mapped strictly to HeatPulse's 5-tier severity scale.
+              Role-specific standard operating procedures mapped strictly to HeatPulse&apos;s 5-tier severity scale.
             </p>
           </div>
 
@@ -136,7 +136,7 @@ Emergency Contact: GCC Helpline 1913 | Medical Emergency 108`
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as 'gcc' | 'uphc' | 'labor' | 'public')}
               className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 shrink-0 transition-colors cursor-pointer ${
                 activeTab === tab.id
                   ? 'bg-orange-50 text-[#F47C20] border border-orange-200'

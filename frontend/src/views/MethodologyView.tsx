@@ -195,7 +195,7 @@ export const MethodologyView: React.FC<MethodologyViewProps> = ({ onOpenExplaina
           </p>
 
           <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-3xl">
-            HeatPulse combines meteorological data, thermal-stress indicators, population exposure, and vulnerability information to estimate ward-level human heat risk across Chennai's 200 GCC administrative wards.
+            HeatPulse combines meteorological data, thermal-stress indicators, population exposure, and vulnerability information to estimate ward-level human heat risk across Chennai&apos;s 200 GCC administrative wards.
           </p>
 
           <div className="pt-2 flex flex-wrap items-center gap-4 text-xs text-slate-500 font-mono">

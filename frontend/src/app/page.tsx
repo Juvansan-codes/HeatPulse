@@ -264,7 +264,7 @@ export default function Home() {
             <div className="max-h-80 overflow-y-auto p-2">
               {searchQuery.trim() === '' ? (
                 <div className="p-5 text-center text-xs text-slate-500 space-y-2">
-                  <p>Type a ward number (e.g. "114"), area ("Royapuram", "Adyar"), or zone.</p>
+                  <p>Type a ward number (e.g. &quot;114&quot;), area (&quot;Royapuram&quot;, &quot;Adyar&quot;), or zone.</p>
                   <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
                     {['Royapuram', 'Anna Nagar', 'Tondiarpet', '114', 'Adyar'].map((q) => (
                       <button
@@ -280,7 +280,7 @@ export default function Home() {
                 </div>
               ) : searchResults.length === 0 ? (
                 <div className="p-6 text-center text-xs text-slate-500">
-                  No wards found matching "<span className="text-slate-900 font-medium">{searchQuery}</span>".
+                  No wards found matching &quot;<span className="text-slate-900 font-medium">{searchQuery}</span>&quot;.
                 </div>
               ) : (
                 <div className="space-y-1">

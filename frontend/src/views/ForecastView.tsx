@@ -55,28 +55,18 @@ const riskBgClass = (level: SeverityLevel) => {
 
 /**
  * Generate hourly data for peak heat hours (10 AM – 6 PM).
- * Uses a sine-bell diurnal model anchored to the day's max / min values.
+ * DEVELOPMENT FIXTURE ONLY - DO NOT USE FOR SCIENTIFIC CALCULATIONS.
+ * The backend API will eventually provide exact hourly forecast arrays.
  */
 function generateHourlyRows(day: ForecastDay): HourlyRow[] {
-  const peakHours = [10, 12, 14, 16, 18];
-  return peakHours.map((h) => {
-    const factor = Math.max(0, Math.sin(((h - 4) / 16) * Math.PI));
-    const temp = +(day.min_temperature + factor * (day.max_temperature - day.min_temperature)).toFixed(1);
-    const utci = +(27 + factor * (day.max_utci - 27)).toFixed(1);
-    const wbgt = +(24 + factor * (day.max_wbgt - 24)).toFixed(1);
-    const htsi = +(30 + factor * (day.max_htsi - 30)).toFixed(1);
-
-    let risk: SeverityLevel = 'Normal';
-    if (htsi >= 80) risk = 'Extreme';
-    else if (htsi >= 72) risk = 'Very High';
-    else if (htsi >= 65) risk = 'High';
-    else if (htsi >= 50) risk = 'Moderate';
-
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const displayHour = h > 12 ? h - 12 : h;
-
-    return { hour: `${displayHour} ${ampm}`, temp, utci, wbgt, htsi, risk };
-  });
+  // Temporary hardcoded UI fixtures replacing the previous sine-bell interpolation and risk thresholding
+  return [
+    { hour: '10 AM', temp: 35.0, utci: 38.0, wbgt: 29.0, htsi: 55.0, risk: 'Moderate' },
+    { hour: '12 PM', temp: 37.5, utci: 42.0, wbgt: 32.0, htsi: 72.0, risk: 'Very High' },
+    { hour: '2 PM', temp: 38.0, utci: 44.0, wbgt: 33.5, htsi: 81.0, risk: 'Extreme' },
+    { hour: '4 PM', temp: 36.5, utci: 40.0, wbgt: 31.0, htsi: 68.0, risk: 'High' },
+    { hour: '6 PM', temp: 34.0, utci: 35.0, wbgt: 28.0, htsi: 48.0, risk: 'Normal' },
+  ];
 }
 
 // ---------------------------------------------------------------------------
