@@ -11,6 +11,7 @@
 
 import type { WardRecord, SeverityLevel } from '../types';
 import type { ApiWardCollection, ApiForecastRecord, ApiWardDetailResponse } from './types';
+import { WARDS_DATA as STATIC_WARDS } from '../data';
 
 /**
  * Map htsi_label string from API to SeverityLevel.
@@ -54,16 +55,18 @@ export function mergeWardAndForecast(
   const utci = forecast?.utci ?? 0;
   const wbgt = forecast?.wbgt_outdoor ?? 0;
   const hhr = forecast?.human_heat_risk ?? 0;
+  
+  const staticData = STATIC_WARDS.find(w => w.ward_id === wardId);
 
   return {
     ward_id: wardId,
     ward_name: wardName,
     zone_id: zoneId ? parseInt(zoneId, 10) || 0 : 0,
     zone_name: zoneId ? `Zone ${zoneId}` : 'Unknown',
-    region: 'Central', // Not provided by API — display placeholder
+    region: staticData?.region ?? 'Central',
     assigned_grid_id: forecast?.assigned_grid_id ?? '',
-    grid_lat: 0, // Not needed for Mapbox — was for SVG
-    grid_lon: 0,
+    grid_lat: staticData?.grid_lat ?? 0,
+    grid_lon: staticData?.grid_lon ?? 0,
 
     // Thermal metrics — directly from forecast, NO calculation
     temperature_2m: forecast?.temperature_2m ?? 0,
@@ -84,19 +87,19 @@ export function mergeWardAndForecast(
     nighttime_stress: 0, // Not in API
     is_extreme_event: forecast?.extreme_utci_flag ?? false,
 
-    // Exposure — not in bulk forecast; set to 0
-    population: 0,
-    area_km2: 0,
-    population_density: 0,
-    exposure_density_norm: 0,
+    // Exposure — pulled from static reference data since bulk API omits it to save bandwidth
+    population: staticData?.population ?? 0,
+    area_km2: staticData?.area_km2 ?? (forecast as any)?.area_km2 ?? 0,
+    population_density: staticData?.population_density ?? 0,
+    exposure_density_norm: staticData?.exposure_density_norm ?? 0,
 
-    // Healthcare — not in bulk forecast
-    healthcare_facility_count: 0,
-    healthcare_facilities_per_10k: 0,
-    adaptive_capacity_norm: 0,
+    // Healthcare — pulled from static reference data
+    healthcare_facility_count: staticData?.healthcare_facility_count ?? 0,
+    healthcare_facilities_per_10k: staticData?.healthcare_facilities_per_10k ?? 0,
+    adaptive_capacity_norm: staticData?.adaptive_capacity_norm ?? 0,
 
-    // Risk — directly from forecast
-    vulnerability: 0, // Only available via /wards/{id} detail
+    // Risk — directly from forecast + static vulnerability
+    vulnerability: staticData?.vulnerability ?? 0,
     heat_hazard: forecast?.thermal_hazard_score ?? (htsi / 100),
     human_heat_risk_formula_a: 0,
     human_heat_risk_formula_b: hhr,

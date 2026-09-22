@@ -24,6 +24,7 @@ interface HeaderProps {
   onOpenSettings?: () => void;
   onOpenProfile?: () => void;
   showHotspots?: boolean;
+  alertText?: React.ReactNode;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -36,7 +37,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenMobileMenu,
   onOpenSettings,
   onOpenProfile,
-  showHotspots = false
+  showHotspots = false,
+  alertText
 }) => {
   const [istTime, setIstTime] = useState<string>('14:30:00 IST');
 
@@ -119,8 +121,7 @@ export const Header: React.FC<HeaderProps> = ({
         <ShieldAlert className="w-4 h-4 text-red-600 shrink-0 animate-pulse" />
         <span className="font-semibold text-red-900 shrink-0">STATUS:</span>
         <span className="truncate">
-          37 Wards under <strong className="text-red-900">VERY HIGH</strong> risk (Royapuram,
-          Tondiarpet). Max UTCI 43.6°C.
+          {alertText || 'Monitoring network status...'}
         </span>
       </div>
 

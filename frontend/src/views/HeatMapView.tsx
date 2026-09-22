@@ -233,7 +233,7 @@ export const HeatMapView: React.FC<HeatMapViewProps> = ({ wards: WARDS_DATA, onS
                 <span className="font-mono text-[10px] text-blue-400">Formula B</span>
               </div>
               <div className="text-3xl font-mono font-bold text-red-400 tabular-nums">
-                {activeWard.ward_id === 86 ? '0.710' : activeWard.human_heat_risk.toFixed(3)}
+                {activeWard.human_heat_risk.toFixed(3)}
               </div>
               <p className="text-[10px] text-slate-400 leading-relaxed">
                 <code className="text-slate-300">H × E × (0.5 + 0.5V)</code>: Retains hazard and population density even when healthcare proxy is low.

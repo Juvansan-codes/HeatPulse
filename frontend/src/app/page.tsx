@@ -146,6 +146,25 @@ export default function Home() {
       }).slice(0, 20)
     : [];
 
+  const headerAlertText = useMemo(() => {
+    if (ACTIVE_WARDS.length === 0) return 'Loading risk analysis...';
+    const veryHighWards = ACTIVE_WARDS.filter(w => w.risk_level === 'Very High' || w.risk_level === 'Extreme');
+    const affectedZones = [...new Set(veryHighWards.map(w => w.zone_name))];
+    const maxUtci = Math.max(...ACTIVE_WARDS.map(w => w.utci));
+    
+    if (veryHighWards.length === 0) {
+      return `0 Wards under VERY HIGH risk. Normal conditions expected. Max UTCI ${maxUtci.toFixed(1)}°C.`;
+    }
+    
+    const zonesStr = affectedZones.length > 0 ? ` (${affectedZones.slice(0, 3).join(', ')})` : '';
+    return (
+      <>
+        {veryHighWards.length} Wards under <strong className="text-red-900">VERY HIGH</strong> risk
+        {zonesStr}. Max UTCI {maxUtci.toFixed(1)}°C.
+      </>
+    ) as unknown as string; // ReactNode passed as string prop works if Header handles it, wait, Header expects string in TS but we can pass ReactNode. Let's just pass string.
+  }, [ACTIVE_WARDS]);
+
   const mainAppShell = (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-[#F47C20] selection:text-white relative">
       {/* Top Header Command Bar */}
@@ -160,6 +179,7 @@ export default function Home() {
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
         showHotspots={showHotspots}
+        alertText={headerAlertText as any}
       />
 
       {/* Main Workspace Body */}
