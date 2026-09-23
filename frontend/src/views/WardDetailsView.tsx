@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { WARDS_DATA } from '../lib/data';
+import type { WardRecord } from '../lib/types';
 import { WardForecastChart } from '../components/WardForecastChart';
 import { RiskCompositionSection } from '../components/RiskCompositionSection';
 import {
@@ -24,24 +24,30 @@ interface WardDetailsViewProps {
   selectedWardId?: number;
   onSelectWard: (wardId: number) => void;
   onOpenExplainability?: (wardId: number) => void;
+  wards: WardRecord[];
 }
 
 export const WardDetailsView: React.FC<WardDetailsViewProps> = ({
   selectedWardId = 114,
   onSelectWard,
-  onOpenExplainability
+  onOpenExplainability,
+  wards
 }) => {
   const [activeFormula, setActiveFormula] = useState<'b' | 'a'>('b');
 
   // Find selected ward or fallback to Ward 86 or first ward
   const ward =
-    WARDS_DATA.find((w) => w.ward_id === selectedWardId) ||
-    WARDS_DATA.find((w) => w.ward_id === 86) ||
-    WARDS_DATA[0];
+    wards.find((w) => w.ward_id === selectedWardId) ||
+    wards.find((w) => w.ward_id === 86) ||
+    wards[0];
 
-  const currentWardIdx = WARDS_DATA.findIndex((w) => w.ward_id === ward.ward_id);
-  const prevWard = currentWardIdx > 0 ? WARDS_DATA[currentWardIdx - 1] : null;
-  const nextWard = currentWardIdx < WARDS_DATA.length - 1 ? WARDS_DATA[currentWardIdx + 1] : null;
+  const currentWardIdx = wards.findIndex((w) => w.ward_id === ward?.ward_id);
+  const prevWard = currentWardIdx > 0 ? wards[currentWardIdx - 1] : null;
+  const nextWard = currentWardIdx < wards.length - 1 ? wards[currentWardIdx + 1] : null;
+
+  if (!ward) {
+    return <div className="p-8 text-center text-slate-500 animate-pulse">Loading ward analysis...</div>;
+  }
 
   // Header Risk styling mapping
   const riskStyles: Record<string, { bg: string; text: string; border: string; glow: string }> = {
@@ -149,7 +155,7 @@ export const WardDetailsView: React.FC<WardDetailsViewProps> = ({
                 aria-label="Select Chennai Ward"
                 className="bg-white border border-slate-200 text-slate-900 font-mono font-bold px-2.5 py-1 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F47C20] cursor-pointer"
               >
-                {WARDS_DATA.map((w) => (
+                {wards.map((w) => (
                   <option key={w.ward_id} value={w.ward_id}>
                     W{w.ward_id}: {w.ward_name} (Z{w.zone_id} • {w.risk_level})
                   </option>

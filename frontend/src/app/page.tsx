@@ -238,6 +238,7 @@ export default function Home() {
                 selectedWardId={selectedWardId}
                 onSelectWard={(id) => setSelectedWardId(id)}
                 onOpenExplainability={handleOpenExplainability}
+                wards={ACTIVE_WARDS}
               />
             )}
 
@@ -287,6 +288,7 @@ export default function Home() {
         isOpen={isExplainOpen}
         onClose={() => setExplainOpen(false)}
         onSelectWard={(id) => handleSelectWard(id)}
+        wards={ACTIVE_WARDS}
       />
 
 
@@ -405,6 +407,7 @@ export default function Home() {
             <MobileMapView
               onSelectWardDetails={handleSelectWard}
               onOpenExplainability={handleOpenExplainability}
+              wards={ACTIVE_WARDS}
             />
           )}
 
@@ -415,6 +418,7 @@ export default function Home() {
               selectedWardId={selectedWardId}
               onSelectWard={(id) => setSelectedWardId(id)}
               onOpenExplainability={handleOpenExplainability}
+              wards={ACTIVE_WARDS}
             />
           )}
 
@@ -422,6 +426,7 @@ export default function Home() {
             <MobileAlertsView
               onSelectWardDetails={handleSelectWard}
               onOpenExplainability={handleOpenExplainability}
+              wards={ACTIVE_WARDS}
             />
           )}
 
@@ -431,12 +436,12 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Phase F7 Explainability Drawer */}
       <WardExplainabilityPanel
         wardId={explainWardId ?? selectedWardId}
         isOpen={isExplainOpen}
         onClose={() => setExplainOpen(false)}
         onSelectWard={(id) => handleSelectWard(id)}
+        wards={ACTIVE_WARDS}
       />
 
 

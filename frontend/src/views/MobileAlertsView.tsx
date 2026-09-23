@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { WARDS_DATA } from '../lib/data';
 import { WardRecord } from '../lib/types';
 import { RiskBadge } from '../components/RiskBadge';
 import { MobileAlertDetailModal } from '../components/MobileAlertDetailModal';
@@ -17,16 +16,18 @@ import {
 interface MobileAlertsViewProps {
   onSelectWardDetails: (wardId: number) => void;
   onOpenExplainability?: (wardId: number) => void;
+  wards: WardRecord[];
 }
 
 export const MobileAlertsView: React.FC<MobileAlertsViewProps> = ({
   onSelectWardDetails,
-  onOpenExplainability
+  onOpenExplainability,
+  wards
 }) => {
   const [selectedWardForModal, setSelectedWardForModal] = useState<WardRecord | null>(null);
 
   // Filter high/very high/extreme risk wards for alerts
-  const alertWards = WARDS_DATA.filter(
+  const alertWards = wards.filter(
     (w) => w.risk_level === 'Extreme' || w.risk_level === 'Very High' || w.risk_level === 'High'
   ).sort((a, b) => b.human_heat_risk - a.human_heat_risk);
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { WARDS_DATA, CHENNAI_ZONES } from '../lib/data';
+import { CHENNAI_ZONES } from '../lib/data';
 import { WardRecord, SeverityLevel } from '../lib/types';
 import { RiskBadge } from '../components/RiskBadge';
 import { MobileWardSheet } from '../components/MobileWardSheet';
@@ -17,19 +17,21 @@ import {
 interface MobileMapViewProps {
   onSelectWardDetails: (wardId: number) => void;
   onOpenExplainability?: (wardId: number) => void;
+  wards: WardRecord[];
 }
 
 export const MobileMapView: React.FC<MobileMapViewProps> = ({
   onSelectWardDetails,
-  onOpenExplainability
+  onOpenExplainability,
+  wards
 }) => {
   const [selectedLayer, setSelectedLayer] = useState<'risk' | 'htsi' | 'utci' | 'exposure'>('risk');
   const [selectedZone, setSelectedZone] = useState<number | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedWard, setSelectedWard] = useState<WardRecord | null>(WARDS_DATA[0]);
+  const [selectedWard, setSelectedWard] = useState<WardRecord | null>(wards[0] || null);
 
   // Filtered wards
-  const filteredWards = WARDS_DATA.filter((ward) => {
+  const filteredWards = wards.filter((ward) => {
     if (selectedZone !== 'all' && ward.zone_id !== selectedZone) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();

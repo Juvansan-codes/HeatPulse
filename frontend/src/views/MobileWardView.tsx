@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { WARDS_DATA, FORECAST_DAYS, FORECAST_TODAY } from '../lib/data';
+import { FORECAST_DAYS, FORECAST_TODAY } from '../lib/data';
+import { WardRecord } from '../lib/types';
 import { useWardForecast, IS_MOCK } from '../lib/api/hooks';
 import { buildForecastDays } from '../lib/api/adapter';
 import { ForecastDay } from '../lib/types';
@@ -23,14 +24,16 @@ interface MobileWardViewProps {
   selectedWardId?: number;
   onSelectWard: (wardId: number) => void;
   onOpenExplainability?: (wardId: number) => void;
+  wards: WardRecord[];
 }
 
 export const MobileWardView: React.FC<MobileWardViewProps> = ({
   selectedWardId = 114,
   onSelectWard,
-  onOpenExplainability
+  onOpenExplainability,
+  wards
 }) => {
-  const ward = WARDS_DATA.find((w) => w.ward_id === selectedWardId) || WARDS_DATA[0];
+  const ward = wards.find((w) => w.ward_id === selectedWardId) || wards[0];
   const forecastApi = useWardForecast(selectedWardId);
   const forecastAll = useMemo<ForecastDay[]>(() => {
     if (IS_MOCK) return [FORECAST_TODAY, ...FORECAST_DAYS];
@@ -74,7 +77,7 @@ export const MobileWardView: React.FC<MobileWardViewProps> = ({
             onChange={(e) => onSelectWard(Number(e.target.value))}
             className="bg-slate-50 border border-slate-200 text-slate-900 font-mono font-bold rounded-lg px-2.5 py-1 text-xs focus:outline-none cursor-pointer"
           >
-            {WARDS_DATA.map((w) => (
+            {wards.map((w) => (
               <option key={w.ward_id} value={w.ward_id}>
                 W{w.ward_id}: {w.ward_name} ({w.risk_level})
               </option>

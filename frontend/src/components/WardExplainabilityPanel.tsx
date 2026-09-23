@@ -9,7 +9,6 @@ import {
   Activity,
   ArrowRight
 } from 'lucide-react';
-import { WARDS_DATA } from '../lib/data';
 import { WardRecord } from '../lib/types';
 import { getMockExplanationContract } from '../lib/explainability';
 import { ExplanationContract } from '../lib/types';
@@ -20,18 +19,20 @@ interface WardExplainabilityPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectWard?: (wardId: number) => void;
+  wards: WardRecord[];
 }
 
 export const WardExplainabilityPanel: React.FC<WardExplainabilityPanelProps> = ({
   wardId,
   isOpen,
   onClose,
+  wards
 }) => {
   const panelRef = useRef<HTMLDivElement>(null);
 
   const ward: WardRecord | undefined = useMemo(
-    () => WARDS_DATA.find((w) => w.ward_id === wardId),
-    [wardId]
+    () => wards.find((w) => w.ward_id === wardId),
+    [wardId, wards]
   );
 
   // Directly fetch the backend contract mock fixture
